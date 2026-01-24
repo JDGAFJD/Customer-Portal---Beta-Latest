@@ -4,9 +4,33 @@ import { motion } from 'framer-motion'
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string
   tooltip?: string
+  icon?: 'email' | 'lock' | 'phone' | 'code'
 }
 
-export default function Input({ label, tooltip, className = '', ...props }: InputProps) {
+const icons = {
+  email: (
+    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+  ),
+  lock: (
+    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    </svg>
+  ),
+  phone: (
+    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+    </svg>
+  ),
+  code: (
+    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  )
+}
+
+export default function Input({ label, tooltip, icon, className = '', ...props }: InputProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
 
@@ -48,6 +72,11 @@ export default function Input({ label, tooltip, className = '', ...props }: Inpu
       </div>
       
       <div className="relative">
+        {icon && (
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+            {icons[icon]}
+          </div>
+        )}
         <input
           {...props}
           onFocus={(e) => {
@@ -59,24 +88,15 @@ export default function Input({ label, tooltip, className = '', ...props }: Inpu
             props.onBlur?.(e)
           }}
           className={`
-            w-full px-4 py-3 rounded-lg border-2 bg-gray-50 text-gray-900
+            w-full ${icon ? 'pl-14' : 'pl-4'} pr-4 py-3.5 rounded-xl border bg-gray-50 text-gray-900
             transition-all duration-200 ease-out
             placeholder:text-gray-400
             ${isFocused 
-              ? 'border-nomad-primary bg-white shadow-lg shadow-nomad-primary/10' 
-              : 'border-transparent hover:border-gray-200 hover:bg-white'
+              ? 'border-nomad-primary bg-white shadow-sm shadow-nomad-primary/10 ring-2 ring-nomad-primary/10' 
+              : 'border-gray-200 hover:border-gray-300 hover:bg-white'
             }
             ${className}
           `}
-        />
-        
-        <motion.div
-          initial={false}
-          animate={{
-            scaleX: isFocused ? 1 : 0,
-            opacity: isFocused ? 1 : 0
-          }}
-          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-nomad-primary to-nomad-accent origin-left rounded-full"
         />
       </div>
     </motion.div>

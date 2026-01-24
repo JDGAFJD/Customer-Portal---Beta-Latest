@@ -20,7 +20,7 @@ export default function Button({
   onClick
 }: ButtonProps) {
   const baseStyles = `
-    w-full py-3.5 px-6 rounded-lg font-semibold text-base
+    w-full py-3.5 px-6 rounded-xl font-semibold text-base
     transition-all duration-200 ease-out
     disabled:opacity-50 disabled:cursor-not-allowed
     flex items-center justify-center gap-2
@@ -29,7 +29,7 @@ export default function Button({
   const variants = {
     primary: `
       bg-gradient-to-r from-nomad-primary to-nomad-accent text-white
-      hover:shadow-lg hover:shadow-nomad-primary/30 hover:-translate-y-0.5
+      hover:shadow-lg hover:shadow-nomad-primary/25 hover:-translate-y-0.5
       active:translate-y-0 active:shadow-md
     `,
     secondary: `
