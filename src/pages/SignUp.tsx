@@ -44,11 +44,28 @@ export default function SignUp() {
     setPhone(formatted)
   }
 
+  const [existingUserMessage, setExistingUserMessage] = useState('')
+
   const checkCustomerEmail = async () => {
     setIsLoading(true)
     setError('')
+    setExistingUserMessage('')
     
     try {
+      const existingUserResponse = await fetch('/api/auth/check-existing-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+      
+      const existingUserData = await existingUserResponse.json()
+      
+      if (existingUserData.exists && existingUserData.hasPassword) {
+        setExistingUserMessage('An account with this email already exists. Please sign in instead.')
+        setIsLoading(false)
+        return
+      }
+
       const response = await fetch('/api/auth/check-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -322,15 +339,30 @@ export default function SignUp() {
 
       <form onSubmit={handleSubmit} className="auth-form">
         {step === 'email' && (
-          <Input
-            label="Email Address"
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            tooltip="Use the email you used when signing up for Nomad Internet"
-          />
+          <>
+            <Input
+              label="Email Address"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                setExistingUserMessage('')
+              }}
+              required
+              tooltip="Use the email you used when signing up for Nomad Internet"
+            />
+            {existingUserMessage && (
+              <div className="existing-user-message">
+                <p>{existingUserMessage}</p>
+                <div className="existing-user-links">
+                  <Link to="/signin" className="link">Sign In</Link>
+                  <span className="separator">or</span>
+                  <Link to="/forgot-password" className="link">Forgot Password?</Link>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {step === 'confirm-email' && (

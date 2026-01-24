@@ -360,6 +360,37 @@ body {
 
 .auth-footer a:hover { text-decoration: underline; }
 
+/* =========================
+   Existing User Message (Signup)
+========================= */
+.existing-user-message {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--r-md);
+  padding: var(--s-3);
+  margin-top: -8px;
+  text-align: center;
+}
+
+.existing-user-message p {
+  color: #92400e;
+  font-size: 14px;
+  margin: 0 0 var(--s-2) 0;
+  line-height: 1.5;
+}
+
+.existing-user-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+}
+
+.existing-user-links .separator {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .auth-legal {
   margin-top: var(--s-3);
   text-align: center;

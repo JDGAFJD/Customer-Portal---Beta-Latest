@@ -60,28 +60,40 @@ shared/
 - **sessions**: JWT tokens with 7-day expiration
 
 ## Sign-Up Flow
-1. **Email Step**: User enters email, verified against Chargebee API
+1. **Email Step**: User enters email, checked against local database first
+   - If user exists with password, shows message to sign in instead with links to Sign In and Forgot Password
+   - If not in local DB, checks against Chargebee API
 2. **Confirm Email**: If not found in Chargebee, asks user to confirm or try different email
 3. **Phone Step**: Collects US phone number (+1 format with validation)
 4. **Phone OTP**: Backend generates 6-digit OTP, sends via Twilio, user enters code
 5. **Email OTP**: Backend generates 6-digit OTP, sends via Twilio, user enters code
-6. **Password**: User creates password (min 8 characters)
+6. **Full Name + Password**: User enters full name and creates password (min 8 characters)
 7. **Auto-login**: User is automatically logged in and redirected to dashboard
 
 ## Sign-In Methods
 1. **Password**: Traditional email + password authentication
 2. **OTP (Passwordless)**: Email OTP sent, verified, then logged in
 
+## Forgot Password Flow
+1. **Email Step**: User enters email, OTP sent with indicator "Email OTP forgot password"
+2. **Verify OTP**: User enters 6-digit code, server issues secure reset token (15-min expiry)
+3. **Reset Password**: User creates new password, reset token validated and invalidated after use
+4. **Success**: User redirected to sign in with new password
+
 ## Backend API Endpoints
 - `POST /api/auth/check-email` - Verify email against Chargebee
+- `POST /api/auth/check-existing-user` - Check if email exists in local database
 - `POST /api/auth/send-phone-otp` - Generate and send phone OTP
 - `POST /api/auth/verify-phone-otp` - Verify phone OTP code
 - `POST /api/auth/send-email-otp` - Generate and send email OTP
 - `POST /api/auth/verify-email-only` - Verify email OTP (sign-up)
-- `POST /api/auth/complete-signup` - Set password and complete registration
+- `POST /api/auth/complete-signup` - Set password, full name, and complete registration
 - `POST /api/auth/signin` - Password-based sign in
 - `POST /api/auth/signin-otp` - Request OTP for sign in
 - `POST /api/auth/verify-signin-otp` - Verify OTP and sign in
+- `POST /api/auth/forgot-password` - Send OTP for password reset
+- `POST /api/auth/verify-forgot-password-otp` - Verify OTP and issue reset token
+- `POST /api/auth/reset-password` - Reset password with valid reset token
 - `GET /api/auth/me` - Get current user profile
 - `POST /api/auth/logout` - Invalidate session
 
@@ -109,3 +121,9 @@ npm run db:push  # Push database schema
   - Dashboard with account info and activity tracking (last login, login count)
   - JWT-based session management with 7-day tokens
   - Secure email OTP verification before password creation
+- Jan 24, 2026: Forgot Password and existing user detection
+  - Check existing user endpoint to detect registered users during signup
+  - Show links to Sign In and Forgot Password for existing users
+  - Forgot Password flow with OTP verification (indicator: "Email OTP forgot password")
+  - Secure reset token system (15-min expiry, single-use, invalidated on new OTP request)
+  - Full name collection during signup and display on dashboard

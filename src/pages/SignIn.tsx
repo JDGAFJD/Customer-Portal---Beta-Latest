@@ -164,19 +164,26 @@ export default function SignIn() {
         )}
 
         {step === 'credentials' && method === 'password' && (
-          <div className="form-row">
-            <label className="checkbox">
-              <input type="checkbox" />
-              <span>Remember me</span>
-            </label>
-            <button 
-              type="button"
-              onClick={() => setMethod('otp')}
-              className="link"
-            >
-              Use OTP instead
-            </button>
-          </div>
+          <>
+            <div className="form-row">
+              <label className="checkbox">
+                <input type="checkbox" />
+                <span>Remember me</span>
+              </label>
+              <button 
+                type="button"
+                onClick={() => setMethod('otp')}
+                className="link"
+              >
+                Use OTP instead
+              </button>
+            </div>
+            <div className="form-row" style={{ justifyContent: 'center', marginTop: '-8px' }}>
+              <Link to="/forgot-password" className="link">
+                Forgot password?
+              </Link>
+            </div>
+          </>
         )}
 
         {step === 'credentials' && method === 'otp' && (

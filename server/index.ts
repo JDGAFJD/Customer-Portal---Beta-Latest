@@ -448,6 +448,171 @@ app.post("/api/auth/logout", async (req, res) => {
   }
 });
 
+app.post("/api/auth/check-existing-user", async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const customer = await storage.getCustomerByEmail(email);
+    
+    if (customer && customer.passwordHash) {
+      return res.json({ 
+        exists: true, 
+        hasPassword: true,
+        message: "An account with this email already exists. Please sign in instead."
+      });
+    }
+
+    res.json({ exists: false, hasPassword: false });
+  } catch (error) {
+    console.error("Check existing user error:", error);
+    res.status(500).json({ error: "Failed to check user" });
+  }
+});
+
+app.post("/api/auth/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const customer = await storage.getCustomerByEmail(email);
+
+    if (!customer) {
+      return res.status(404).json({ error: "No account found with this email" });
+    }
+
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await storage.invalidateOtpCodes(email.toLowerCase(), "forgot_password");
+    invalidateResetTokensForEmail(email);
+
+    await storage.createOtpCode({
+      customerId: customer.id,
+      code: otp,
+      type: "forgot_password",
+      target: email.toLowerCase(),
+      expiresAt,
+    });
+
+    await fetch("https://app.lrlos.com/webhook/twilio/sendotp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        indicator: "Email OTP forgot password",
+        otp,
+      }),
+    });
+
+    res.json({ success: true, customerId: customer.id, message: "OTP sent to email" });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ error: "Failed to send OTP" });
+  }
+});
+
+const resetTokens = new Map<string, { email: string; expiresAt: Date }>();
+
+function generateResetToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function invalidateResetTokensForEmail(email: string): void {
+  const normalizedEmail = email.toLowerCase();
+  for (const [token, data] of resetTokens.entries()) {
+    if (data.email === normalizedEmail) {
+      resetTokens.delete(token);
+    }
+  }
+}
+
+app.post("/api/auth/verify-forgot-password-otp", async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({ error: "Email and code are required" });
+    }
+
+    const otpRecord = await storage.getValidOtpCode(email.toLowerCase(), code, "forgot_password");
+
+    if (!otpRecord) {
+      return res.status(400).json({ error: "Invalid or expired OTP" });
+    }
+
+    await storage.markOtpVerified(otpRecord.id);
+
+    const customer = await storage.getCustomerByEmail(email);
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    const resetToken = generateResetToken();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    resetTokens.set(resetToken, { email: email.toLowerCase(), expiresAt });
+
+    res.json({ 
+      success: true, 
+      customerId: customer.id,
+      resetToken,
+      message: "OTP verified. You can now reset your password."
+    });
+  } catch (error) {
+    console.error("Verify forgot password OTP error:", error);
+    res.status(500).json({ error: "Verification failed" });
+  }
+});
+
+app.post("/api/auth/reset-password", async (req, res) => {
+  try {
+    const { email, password, resetToken } = req.body;
+
+    if (!email || !password || !resetToken) {
+      return res.status(400).json({ error: "Email, password, and reset token are required" });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters" });
+    }
+
+    const tokenData = resetTokens.get(resetToken);
+    if (!tokenData) {
+      return res.status(400).json({ error: "Invalid or expired reset token. Please request a new verification code." });
+    }
+
+    if (tokenData.email !== email.toLowerCase()) {
+      return res.status(400).json({ error: "Reset token does not match email" });
+    }
+
+    if (new Date() > tokenData.expiresAt) {
+      resetTokens.delete(resetToken);
+      return res.status(400).json({ error: "Reset token expired. Please request a new verification code." });
+    }
+
+    const customer = await storage.getCustomerByEmail(email);
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    await storage.updateCustomer(customer.id, { passwordHash });
+
+    resetTokens.delete(resetToken);
+
+    res.json({ success: true, message: "Password reset successfully. Please sign in with your new password." });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ error: "Failed to reset password" });
+  }
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
