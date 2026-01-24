@@ -4,8 +4,8 @@ const SHOPIFY_STORE = 'nomadinternet';
 async function fetchShopifyOrders() {
   console.log('\n=== SHOPIFY ORDERS ===\n');
   
-  const apiKey = process.env.SHOPIFY_API_KEY;
-  const secretKey = process.env.SHOPIFY_SECRET_KEY;
+  const apiKey = '2e33b070dbe555f1064f336a6b0d8cc6';
+  const secretKey = process.env.SHOPIFY_APP_SHARED_SECRET;
   
   if (!apiKey || !secretKey) {
     console.log('Missing Shopify credentials');
