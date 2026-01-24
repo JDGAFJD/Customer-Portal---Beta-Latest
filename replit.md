@@ -53,3 +53,6 @@ Runs on port 5000.
 - Created sign-in and sign-up pages with Nomad branding
 - Implemented multi-step sign-up flow with API integrations
 - Added animations, hover effects, and tooltips
+- Fixed UI spacing: Replaced icon box with "Nomad Internet" text branding on left panel
+- Improved spacing and centering across all form elements
+- Enhanced visual hierarchy with proper padding and margins
