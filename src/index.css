@@ -1,10 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  --color-nomad-primary: #00A77F;
-  --color-nomad-accent: #008061;
-  --color-nomad-light: #E8F5F1;
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --color-nomad-primary: #10a37f;
+  --color-nomad-accent: #0a8f6a;
+  --color-nomad-dark: #0a7e60;
+  --color-nomad-light: rgba(16, 163, 127, 0.12);
+  --color-nomad-bg: #f7faf9;
+  --color-text: #0f172a;
+  --color-muted: #64748b;
+  --color-surface: rgba(255, 255, 255, 0.72);
+  --color-border: rgba(15, 23, 42, 0.10);
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  
+  --shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.12);
+  --shadow-md: 0 10px 30px rgba(15, 23, 42, 0.10);
+  --shadow-btn: 0 10px 30px rgba(15, 23, 42, 0.10);
+  --shadow-btn-hover: 0 16px 40px rgba(15, 23, 42, 0.14);
+  
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-btn: 14px;
 }
 
 * {
@@ -15,8 +30,8 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: #FFFFFF;
-  color: #333333;
+  background-color: var(--color-nomad-bg);
+  color: var(--color-text);
   min-height: 100vh;
 }
 
@@ -26,6 +41,11 @@ body {
 
 input:focus {
   outline: none;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(16, 163, 127, 0.45);
+  outline-offset: 3px;
 }
 
 .tooltip {
@@ -53,4 +73,12 @@ input:focus {
 .tooltip:hover::after {
   opacity: 1;
   visibility: visible;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
 }

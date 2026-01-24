@@ -28,103 +28,104 @@ export default function SignIn() {
 
   return (
     <AuthLayout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        <div className="text-center mb-10">
-          <motion.h1 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-3xl font-semibold text-gray-800 mb-3"
-          >
-            Welcome Back
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-gray-500 text-base"
-          >
-            Sign in to access your Nomad Internet account
-          </motion.p>
-        </div>
-
-        <motion.form 
-          onSubmit={handleSubmit}
+      <div className="text-center mb-10">
+        <motion.h1 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-6"
+          transition={{ delay: 0.2 }}
+          className="font-extrabold mb-3"
+          style={{ fontSize: '34px', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#0f172a' }}
         >
-          <Input
-            label="Email Address"
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            tooltip="Use the email you registered with"
-          />
+          Welcome Back
+        </motion.h1>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="leading-relaxed"
+          style={{ color: '#64748b', lineHeight: 1.6 }}
+        >
+          Sign in to access your Nomad Internet account
+        </motion.p>
+      </div>
 
-          <Input
-            label="Password"
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            tooltip="Your account password"
-          />
+      <motion.form 
+        onSubmit={handleSubmit}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+        className="grid gap-8"
+      >
+        <Input
+          label="Email Address"
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          tooltip="Use the email you registered with"
+        />
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm"
-            >
-              {error}
-            </motion.div>
-          )}
+        <Input
+          label="Password"
+          type="password"
+          placeholder="Enter your password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          tooltip="Your account password"
+        />
 
-          <div className="flex items-center justify-between text-sm pt-1">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <input 
-                type="checkbox" 
-                className="w-4 h-4 rounded border-gray-300 text-nomad-primary focus:ring-nomad-primary cursor-pointer"
-              />
-              <span className="text-gray-600 group-hover:text-gray-800 transition-colors">
-                Remember me
-              </span>
-            </label>
-            <a 
-              href="#" 
-              className="text-nomad-accent hover:text-nomad-primary transition-colors font-medium"
-            >
-              Forgot password?
-            </a>
-          </div>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="p-4 rounded-xl text-sm"
+            style={{ 
+              background: 'rgba(239, 68, 68, 0.08)', 
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              color: '#dc2626'
+            }}
+          >
+            {error}
+          </motion.div>
+        )}
 
-          <div className="pt-2">
-            <Button type="submit" isLoading={isLoading}>
-              Sign In
-            </Button>
-          </div>
+        <div className="flex items-center justify-between text-sm" style={{ marginTop: '-6px' }}>
+          <label className="flex items-center gap-2.5 cursor-pointer group">
+            <input 
+              type="checkbox" 
+              className="w-[18px] h-[18px] rounded cursor-pointer"
+              style={{ accentColor: '#10a37f' }}
+            />
+            <span style={{ color: 'rgba(15, 23, 42, 0.78)' }}>
+              Remember me
+            </span>
+          </label>
+          <a 
+            href="#" 
+            className="font-bold hover:underline"
+            style={{ color: '#0a8f6a' }}
+          >
+            Forgot password?
+          </a>
+        </div>
 
-          <p className="text-center text-gray-500 text-sm pt-4">
-            Don't have an account?{' '}
-            <Link 
-              to="/signup" 
-              className="text-nomad-accent hover:text-nomad-primary transition-colors font-medium"
-            >
-              Sign up
-            </Link>
-          </p>
-        </motion.form>
-      </motion.div>
+        <Button type="submit" isLoading={isLoading}>
+          Sign In
+        </Button>
+
+        <p className="text-center text-sm" style={{ color: '#64748b', lineHeight: 1.6 }}>
+          Don't have an account?{' '}
+          <Link 
+            to="/signup" 
+            className="font-extrabold hover:underline"
+            style={{ color: '#0a8f6a' }}
+          >
+            Sign up
+          </Link>
+        </p>
+      </motion.form>
     </AuthLayout>
   )
 }

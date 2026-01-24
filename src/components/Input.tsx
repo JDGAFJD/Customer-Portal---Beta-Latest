@@ -16,8 +16,11 @@ export default function Input({ label, tooltip, className = '', ...props }: Inpu
       animate={{ opacity: 1, y: 0 }}
       className="relative"
     >
-      <div className="flex items-center justify-between mb-2">
-        <label className="block text-sm font-medium text-gray-700">
+      <div className="flex items-center justify-between mb-3">
+        <label 
+          className="block text-sm font-bold"
+          style={{ color: 'rgba(15, 23, 42, 0.82)' }}
+        >
           {label}
         </label>
         {tooltip && (
@@ -28,9 +31,10 @@ export default function Input({ label, tooltip, className = '', ...props }: Inpu
           >
             <button
               type="button"
-              className="w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              className="w-5 h-5 rounded-full flex items-center justify-center transition-colors"
+              style={{ background: 'rgba(15, 23, 42, 0.08)' }}
             >
-              <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3" style={{ color: '#64748b' }} fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
               </svg>
             </button>
@@ -47,38 +51,30 @@ export default function Input({ label, tooltip, className = '', ...props }: Inpu
         )}
       </div>
       
-      <div className="relative">
-        <input
-          {...props}
-          onFocus={(e) => {
-            setIsFocused(true)
-            props.onFocus?.(e)
-          }}
-          onBlur={(e) => {
-            setIsFocused(false)
-            props.onBlur?.(e)
-          }}
-          className={`
-            w-full px-4 py-3 rounded-lg border-2 bg-gray-50 text-gray-900
-            transition-all duration-200 ease-out
-            placeholder:text-gray-400
-            ${isFocused 
-              ? 'border-nomad-primary bg-white shadow-lg shadow-nomad-primary/10' 
-              : 'border-transparent hover:border-gray-200 hover:bg-white'
-            }
-            ${className}
-          `}
-        />
-        
-        <motion.div
-          initial={false}
-          animate={{
-            scaleX: isFocused ? 1 : 0,
-            opacity: isFocused ? 1 : 0
-          }}
-          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-nomad-primary to-nomad-accent origin-left rounded-full"
-        />
-      </div>
+      <input
+        {...props}
+        onFocus={(e) => {
+          setIsFocused(true)
+          props.onFocus?.(e)
+        }}
+        onBlur={(e) => {
+          setIsFocused(false)
+          props.onBlur?.(e)
+        }}
+        className={`
+          w-full rounded-xl text-base transition-all duration-150 ease-out
+          ${className}
+        `}
+        style={{
+          height: '52px',
+          padding: '0 14px',
+          border: isFocused ? '1px solid rgba(16, 163, 127, 0.55)' : '1px solid rgba(15, 23, 42, 0.10)',
+          background: 'rgba(255,255,255,0.9)',
+          color: '#0f172a',
+          boxShadow: isFocused ? '0 0 0 6px rgba(16, 163, 127, 0.12)' : 'none',
+        }}
+        placeholder={props.placeholder}
+      />
     </motion.div>
   )
 }

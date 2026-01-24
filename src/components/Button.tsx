@@ -19,33 +19,35 @@ export default function Button({
   disabled,
   onClick
 }: ButtonProps) {
-  const baseStyles = `
-    w-full py-3.5 px-6 rounded-lg font-semibold text-base
-    transition-all duration-200 ease-out
-    disabled:opacity-50 disabled:cursor-not-allowed
-    flex items-center justify-center gap-2
-  `
-  
-  const variants = {
-    primary: `
-      bg-gradient-to-r from-nomad-primary to-nomad-accent text-white
-      hover:shadow-lg hover:shadow-nomad-primary/30 hover:-translate-y-0.5
-      active:translate-y-0 active:shadow-md
-    `,
-    secondary: `
-      bg-white border-2 border-gray-200 text-gray-700
-      hover:border-nomad-primary hover:text-nomad-primary
-      active:bg-gray-50
-    `
-  }
+  const isPrimary = variant === 'primary'
 
   return (
     <motion.button
       type={type}
-      whileHover={{ scale: disabled || isLoading ? 1 : 1.01 }}
-      whileTap={{ scale: disabled || isLoading ? 1 : 0.98 }}
+      whileHover={{ 
+        y: disabled || isLoading ? 0 : -1, 
+        filter: disabled || isLoading ? 'none' : 'brightness(1.03)',
+      }}
+      whileTap={{ y: 0 }}
       disabled={disabled || isLoading}
-      className={`${baseStyles} ${variants[variant]} ${className}`}
+      className={`
+        w-full font-extrabold text-base cursor-pointer
+        disabled:opacity-70 disabled:cursor-not-allowed
+        flex items-center justify-center gap-2
+        transition-all duration-150 ease-out
+        ${className}
+      `}
+      style={{
+        height: '54px',
+        borderRadius: '14px',
+        border: isPrimary ? 'none' : '1px solid rgba(15, 23, 42, 0.15)',
+        background: isPrimary 
+          ? 'linear-gradient(135deg, #10a37f, #0a8f6a)' 
+          : '#ffffff',
+        color: isPrimary ? '#ffffff' : '#0f172a',
+        boxShadow: isPrimary ? '0 10px 30px rgba(15, 23, 42, 0.10)' : 'none',
+        letterSpacing: '0.01em',
+      }}
       onClick={onClick}
     >
       {isLoading ? (
@@ -53,7 +55,11 @@ export default function Button({
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+            className="w-5 h-5 border-2 rounded-full"
+            style={{ 
+              borderColor: isPrimary ? 'rgba(255,255,255,0.3)' : 'rgba(15,23,42,0.2)',
+              borderTopColor: isPrimary ? '#ffffff' : '#0f172a'
+            }}
           />
           <span>Please wait...</span>
         </>
