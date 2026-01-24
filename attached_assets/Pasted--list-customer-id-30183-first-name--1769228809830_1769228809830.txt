@@ -1,0 +1,86 @@
+[
+  {
+    "list": [
+      {
+        "customer": {
+          "id": "30183",
+          "first_name": "Bryan",
+          "last_name": "Testing",
+          "email": "emailforallworks0@gmail.com",
+          "company": "Bryan Testing",
+          "auto_collection": "off",
+          "net_term_days": 0,
+          "allow_direct_debit": true,
+          "created_at": 1758251521,
+          "created_from_ip": "102.91.77.143",
+          "taxability": "taxable",
+          "updated_at": 1768589433,
+          "pii_cleared": "active",
+          "channel": "web",
+          "resource_version": 1768589433278,
+          "deleted": false,
+          "object": "customer",
+          "card_status": "no_card",
+          "balances": [
+            {
+              "promotional_credits": 0,
+              "excess_payments": 0,
+              "refundable_credits": 0,
+              "unbilled_charges": 11995,
+              "object": "customer_balance",
+              "currency_code": "USD",
+              "balance_currency_code": "USD"
+            }
+          ],
+          "promotional_credits": 0,
+          "refundable_credits": 0,
+          "excess_payments": 0,
+          "unbilled_charges": 11995,
+          "preferred_currency_code": "USD",
+          "mrr": 11995
+        }
+      },
+      {
+        "customer": {
+          "id": "AzZj9bUx1Ro6J1anP",
+          "first_name": "Bryan",
+          "last_name": "Fury 2",
+          "email": "emailforallworks0@gmail.com",
+          "phone": "+92",
+          "auto_collection": "off",
+          "net_term_days": 0,
+          "allow_direct_debit": false,
+          "created_at": 1758080308,
+          "created_from_ip": "206.84.147.63",
+          "taxability": "taxable",
+          "updated_at": 1761765031,
+          "locale": "fr-CA",
+          "pii_cleared": "active",
+          "channel": "web",
+          "resource_version": 1761765031848,
+          "deleted": false,
+          "object": "customer",
+          "billing_address": {
+            "first_name": "Bryan",
+            "last_name": "Fury",
+            "line1": "PO Box 9999",
+            "city": "Walnut",
+            "state_code": "CA",
+            "state": "California",
+            "country": "US",
+            "zip": "91789",
+            "validation_status": "not_validated",
+            "object": "billing_address"
+          },
+          "card_status": "no_card",
+          "promotional_credits": 0,
+          "refundable_credits": 0,
+          "excess_payments": 0,
+          "unbilled_charges": 0,
+          "preferred_currency_code": "USD",
+          "mrr": 30985
+        }
+      }
+    ]
+  }
+]
