@@ -4,58 +4,24 @@ const SHOPIFY_STORE = 'nomadinternet';
 async function fetchShopifyOrders() {
   console.log('\n=== SHOPIFY ORDERS ===\n');
   
-  const apiKey = '2e33b070dbe555f1064f336a6b0d8cc6';
-  const secretKey = process.env.SHOPIFY_APP_SHARED_SECRET;
+  const accessToken = process.env.SHOPIFY_ADMIN_KEY;
   
-  if (!apiKey || !secretKey) {
-    console.log('Missing Shopify credentials');
+  if (!accessToken) {
+    console.log('Missing Shopify Admin API token');
     return [];
   }
 
   try {
-    const customersUrl = `https://${SHOPIFY_STORE}.myshopify.com/admin/api/2024-01/customers/search.json?query=email:${encodeURIComponent(CUSTOMER_EMAIL)}`;
-    
-    console.log(`Searching for customer: ${CUSTOMER_EMAIL}`);
+    console.log(`Searching for orders with email: ${CUSTOMER_EMAIL}`);
     console.log(`Using store: ${SHOPIFY_STORE}.myshopify.com`);
     
-    const customerResponse = await fetch(customersUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': secretKey
-      }
-    });
-
-    if (!customerResponse.ok) {
-      const errorText = await customerResponse.text();
-      console.log(`Shopify customer search failed (${customerResponse.status}): ${errorText}`);
-      return [];
-    }
-
-    const customerData = await customerResponse.json() as any;
-    console.log(`Found ${customerData.customers?.length || 0} customer(s)`);
-
-    if (!customerData.customers || customerData.customers.length === 0) {
-      console.log('No customer found with this email in Shopify');
-      return [];
-    }
-
-    const customer = customerData.customers[0];
-    console.log(`\nCustomer Details:`);
-    console.log(`  ID: ${customer.id}`);
-    console.log(`  Name: ${customer.first_name} ${customer.last_name}`);
-    console.log(`  Email: ${customer.email}`);
-    console.log(`  Phone: ${customer.phone || 'N/A'}`);
-    console.log(`  Orders Count: ${customer.orders_count}`);
-    console.log(`  Total Spent: ${customer.total_spent}`);
-
-    const ordersUrl = `https://${SHOPIFY_STORE}.myshopify.com/admin/api/2024-01/orders.json?customer_id=${customer.id}&status=any&limit=50`;
+    const ordersUrl = `https://${SHOPIFY_STORE}.myshopify.com/admin/api/2024-01/orders.json?status=any&limit=250`;
     
     const ordersResponse = await fetch(ordersUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': secretKey
+        'X-Shopify-Access-Token': accessToken
       }
     });
 
@@ -66,9 +32,16 @@ async function fetchShopifyOrders() {
     }
 
     const ordersData = await ordersResponse.json() as any;
-    const orders = ordersData.orders || [];
+    const allOrders = ordersData.orders || [];
     
-    console.log(`\n--- Found ${orders.length} Order(s) ---\n`);
+    console.log(`Fetched ${allOrders.length} total orders, filtering by email...`);
+    
+    const orders = allOrders.filter((order: any) => 
+      order.email?.toLowerCase() === CUSTOMER_EMAIL.toLowerCase() ||
+      order.contact_email?.toLowerCase() === CUSTOMER_EMAIL.toLowerCase()
+    );
+    
+    console.log(`\n--- Found ${orders.length} Order(s) for ${CUSTOMER_EMAIL} ---\n`);
 
     orders.forEach((order: any, index: number) => {
       console.log(`Order #${index + 1}:`);
