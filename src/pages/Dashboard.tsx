@@ -282,7 +282,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img 
-              src="https://nomadinternet.com/cdn/shop/files/New_Nomad_Logo_Artboard_1_copy_6_120x@2x.png?v=1693611545" 
+              src="/logo.svg" 
               alt="Nomad Internet" 
               className="h-10"
             />
@@ -294,12 +294,8 @@ export default function Dashboard() {
               onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center gap-3 hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors"
             >
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
-                <img 
-                  src="/avatar-placeholder.png" 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-primary flex items-center justify-center text-white font-semibold">
+                {customer?.fullName ? customer.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
               </div>
               <div className="text-left hidden sm:block">
                 <p className="text-sm font-medium text-text">{customer?.fullName || 'User'}</p>
@@ -313,7 +309,7 @@ export default function Dashboard() {
             {showDropdown && (
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2" style={{ zIndex: 9999 }}>
                 <Link
-                  to="/account-settings"
+                  to="/account"
                   className="flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-gray-50 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -323,7 +319,7 @@ export default function Dashboard() {
                   Account Settings
                 </Link>
                 <Link
-                  to="/activity-log"
+                  to="/activity"
                   className="flex items-center gap-3 px-4 py-2 text-sm text-text hover:bg-gray-50 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
