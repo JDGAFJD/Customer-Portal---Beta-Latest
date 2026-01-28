@@ -794,6 +794,45 @@ app.get("/api/customer/full-data", async (req, res) => {
   }
 });
 
+app.post("/api/chat", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const session = await storage.getSessionByToken(token);
+    if (!session) {
+      return res.status(401).json({ error: "Invalid session" });
+    }
+
+    const customer = await storage.getCustomer(session.customerId);
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    const { message, conversationHistory } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    const { handleChatMessage } = await import('./chat');
+    const fullData = await fetchCustomerFullData(customer.email);
+    const result = await handleChatMessage(
+      fullData,
+      customer.email,
+      message,
+      conversationHistory || []
+    );
+
+    res.json(result);
+  } catch (error: any) {
+    console.error("Chat error:", error);
+    res.status(500).json({ error: error.message || "Failed to process chat message" });
+  }
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });

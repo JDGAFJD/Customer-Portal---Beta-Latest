@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { ChatWidget } from '../components/ChatWidget'
 
 function RawDataPanel({ data, title }: { data: any; title: string }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -164,6 +165,7 @@ export default function Dashboard() {
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [showDropdown, setShowDropdown] = useState(false)
   const [activeTab, setActiveTab] = useState<'overview' | 'subscriptions' | 'orders' | 'invoices' | 'internet'>('overview')
+  const [authToken, setAuthToken] = useState<string | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -174,6 +176,8 @@ export default function Dashboard() {
         navigate('/signin')
         return
       }
+
+      setAuthToken(token)
 
       try {
         const response = await fetch('/api/auth/me', {
@@ -862,6 +866,8 @@ export default function Dashboard() {
           </>
         )}
       </main>
+      
+      {authToken && <ChatWidget token={authToken} />}
     </div>
   )
 }
