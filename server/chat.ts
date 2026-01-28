@@ -62,7 +62,9 @@ function formatAccountContext(data: CustomerFullData, email: string): string {
     parts.push(`\n## Orders (${data.orders.length} total)`);
     data.orders.slice(0, 5).forEach(order => {
       parts.push(`- Order #${order.orderNumber}`);
-      parts.push(`  Total: $${(order.total / 100).toFixed(2)}`);
+      // Shopify returns amounts in dollars as strings, not cents
+      const orderTotal = typeof order.total === 'string' ? parseFloat(order.total) : order.total;
+      parts.push(`  Total: $${orderTotal.toFixed(2)}`);
       parts.push(`  Status: ${order.fulfillmentStatus || order.status || 'Processing'}`);
       if (order.orderDate) {
         parts.push(`  Date: ${new Date(order.orderDate).toLocaleDateString()}`);
@@ -92,18 +94,21 @@ function formatAccountContext(data: CustomerFullData, email: string): string {
   return parts.join('\n');
 }
 
-const SYSTEM_PROMPT = `You are a helpful customer support assistant for Nomad Internet, a company that provides wireless internet services to customers across the United States.
+const SYSTEM_PROMPT = `You are JADA, a helpful AI customer support assistant for Nomad Internet, a company that provides wireless internet services to customers across the United States.
 
 Your role is to help customers understand their account information, answer questions about their subscriptions, orders, invoices, and devices.
 
 Guidelines:
 1. Be friendly, professional, and concise
-2. When discussing money, always format as dollars (e.g., $99.99)
-3. When discussing dates, use a friendly format (e.g., "January 15, 2026")
-4. If a customer asks about something not in their account data, politely explain you can only help with their account information
-5. For billing issues, cancellations, or complex technical problems, suggest they contact Nomad Internet support directly
-6. Never make up information - only use the data provided
-7. If asked about data not available, say you don't have that specific information
+2. Introduce yourself as JADA when starting a conversation
+3. When discussing money, always format as dollars (e.g., $99.99)
+4. IMPORTANT: Chargebee data (subscriptions, invoices) amounts are provided in CENTS - divide by 100 for dollars
+5. IMPORTANT: Shopify order totals are already in dollars - do NOT divide by 100
+6. When discussing dates, use a friendly format (e.g., "January 15, 2026")
+7. If a customer asks about something not in their account data, politely explain you can only help with their account information
+8. For billing issues, cancellations, or complex technical problems, suggest they contact Nomad Internet support directly
+9. Never make up information - only use the data provided
+10. If asked about data not available, say you don't have that specific information
 
 The customer's account information will be provided in the context. Use this to answer their questions accurately.`;
 
