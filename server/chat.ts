@@ -14,21 +14,24 @@ function formatAccountContext(data: CustomerFullData, email: string): string {
   sections.push(`CUSTOMER EMAIL: ${email}`);
   sections.push("");
 
-  sections.push("=== CHARGEBEE DATA ===");
-  sections.push("(Billing system: customers, subscriptions, invoices, transactions, payment methods)");
-  sections.push("NOTE: All monetary amounts are already in DOLLARS (e.g., 99.95 means $99.95).");
-  sections.push("NOTE: All dates are ISO strings (e.g., '2026-01-05T02:59:32.000Z').");
+  sections.push("=== CHARGEBEE DATA (COMPLETE RAW JSON) ===");
+  sections.push("Contains: All customer accounts, ALL subscriptions per customer, ALL invoices, ALL transactions, payment methods");
+  sections.push("- customers[].subscriptions[] = array of ALL subscription objects with full details");
+  sections.push("- customers[].invoices[] = array of ALL invoice objects");
+  sections.push("- customers[].transactions[] = array of ALL payment transaction objects");
+  sections.push("NOTE: Amounts in DOLLARS. Dates are ISO strings.");
   sections.push(JSON.stringify(data.chargebee, null, 2));
   sections.push("");
 
-  sections.push("=== ORDERS DATA (Shopify + Shipstation) ===");
-  sections.push("(Customer orders, line items, shipping addresses, tracking info, IMEI/ICCID from Shipstation custom fields)");
-  sections.push("NOTE: Order totals are already in dollars - do NOT divide by 100.");
+  sections.push("=== ALL ORDERS (Shopify + Shipstation Combined - COMPLETE RAW JSON) ===");
+  sections.push("Contains: ALL orders for this customer, each with line items, shipping, tracking, IMEI/ICCID");
+  sections.push(`Total orders: ${data.orders.length}`);
+  sections.push("NOTE: Amounts in DOLLARS.");
   sections.push(JSON.stringify(data.orders, null, 2));
   sections.push("");
 
-  sections.push("=== THINGSPACE DEVICES ===");
-  sections.push("(Verizon carrier/line status for each device)");
+  sections.push("=== THINGSPACE DEVICES (Simplified) ===");
+  sections.push("Verizon carrier/line status for each device");
   const simplifiedDevices = data.devices.map((device: any) => ({
     carrierState: device.carrier?.state || device.state || "unknown",
     lastConnectionDate: device.lastConnectionDate ? device.lastConnectionDate.split('T')[0] : null,
@@ -227,10 +230,10 @@ export async function handleChatMessage(
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages,
-      max_tokens: 500,
-      temperature: 0.7,
+      max_tokens: 1000,
+      temperature: 0.5,
     });
 
     const assistantMessage =
