@@ -431,6 +431,19 @@ async function chargebeeApiGet(endpoint: string): Promise<any> {
   return response.json();
 }
 
+export async function checkChargebeeCustomer(email: string): Promise<{ found: boolean; customer: any | null }> {
+  try {
+    const customerData = await chargebeeApiGet(`/customers?email[is]=${encodeURIComponent(email)}`);
+    if (customerData?.list?.length) {
+      return { found: true, customer: customerData.list[0].customer };
+    }
+    return { found: false, customer: null };
+  } catch (error) {
+    console.error('Chargebee customer lookup error:', error);
+    return { found: false, customer: null };
+  }
+}
+
 export async function fetchChargebeeData(email: string): Promise<ChargebeeData> {
   const result: ChargebeeData = {
     customer: null,

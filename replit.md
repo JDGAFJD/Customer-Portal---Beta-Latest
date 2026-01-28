@@ -105,8 +105,11 @@ shared/
 - `POST /api/auth/logout` - Invalidate session
 
 ## External API Endpoints
-- `POST https://app.lrlos.com/webhook/Chargebee/getcustomersusingemail` - Customer lookup
+- Chargebee API (direct) - `https://{CHARGEBEE_SITE}.chargebee.com/api/v2/` - Customer, subscription, invoice, transaction lookup
 - `POST https://app.lrlos.com/webhook/twilio/sendotp` - Send OTP codes
+- Shopify Admin API - Order retrieval
+- Shipstation API - Shipping and tracking information
+- ThingSpace API - Device status and management
 
 ## Environment Variables
 - `DATABASE_URL` - PostgreSQL connection string (auto-configured)

@@ -29,27 +29,21 @@ app.post("/api/auth/check-email", async (req, res) => {
       return res.status(400).json({ error: "Email is required" });
     }
 
-    const response = await fetch("https://app.lrlos.com/webhook/Chargebee/getcustomersusingemail", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, keyword: "signup" }),
-    });
-
-    const data = await response.json();
-    const customerFound = Array.isArray(data) && data.length > 0;
+    const { checkChargebeeCustomer } = await import('./services');
+    const { found: customerFound, customer: chargebeeCustomer } = await checkChargebeeCustomer(email);
 
     let customer = await storage.getCustomerByEmail(email);
     if (!customer) {
       customer = await storage.createCustomer({ 
         email,
-        chargebeeCustomerId: customerFound && data[0]?.id ? data[0].id : null
+        chargebeeCustomerId: customerFound && chargebeeCustomer?.id ? chargebeeCustomer.id : null
       });
     }
 
     res.json({ 
       customerFound, 
       customerId: customer.id,
-      chargebeeData: customerFound ? data[0] : null 
+      chargebeeData: customerFound ? chargebeeCustomer : null 
     });
   } catch (error) {
     console.error("Check email error:", error);
