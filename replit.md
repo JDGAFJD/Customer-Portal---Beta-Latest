@@ -62,6 +62,13 @@ shared/
 - **otp_codes**: 6-digit codes with 10-minute expiration, types (phone/email/signin)
 - **sessions**: JWT tokens with 7-day expiration
 
+## API Documentation
+See `docs/API-DOCUMENTATION.md` for detailed information about all external API integrations including:
+- Chargebee (billing, subscriptions, invoices, transactions)
+- Shopify Admin API (orders, fulfillments)
+- Shipstation (shipping, tracking, IMEI/ICCID custom fields)
+- ThingSpace (Verizon device management)
+
 ## Sign-Up Flow
 1. **Email Step**: User enters email, checked against local database first
    - If user exists with password, shows message to sign in instead with links to Sign In and Forgot Password
