@@ -1,0 +1,1140 @@
+const CHARGEBEE_API_KEY = process.env.CHARGEBEE_API_KEY;
+const CHARGEBEE_SITE = process.env.CHARGEBEE_SITE;
+const SHOPIFY_ADMIN_KEY = process.env.SHOPIFY_ADMIN_KEY;
+const SHIPSTATION_API_KEY = process.env.SHIPSTATION_API_KEY;
+const SHIPSTATION_API_SECRET = process.env.SHIPSTATION_API_SECRET;
+const THINGSPACE_CLIENT_ID = process.env.THINGSPACE_CLIENT_ID;
+const THINGSPACE_CLIENT_SECRET = process.env.THINGSPACE_CLIENT_SECRET;
+const THINGSPACE_USERNAME = process.env.THINGSPACE_USERNAME;
+const THINGSPACE_PASSWORD = process.env.THINGSPACE_PASSWORD;
+const THINGSPACE_ACCOUNT_NAME = process.env.THINGSPACE_ACCOUNT_NAME;
+
+export interface ChargebeeCustomer {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  createdAt: string;
+  autoCollection: string;
+  promotionalCredits: number;
+  refundableCredits: number;
+  excessPayments: number;
+  unbilledCharges: number;
+  billingAddress?: {
+    firstName: string;
+    lastName: string;
+    line1: string;
+    line2: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+    phone: string;
+  };
+  paymentMethod?: {
+    type: string;
+    status: string;
+    gateway: string;
+  };
+  customFields?: Record<string, string>;
+}
+
+export interface ChargebeeSubscription {
+  id: string;
+  planId: string;
+  status: string;
+  planAmount: number;
+  billingPeriod: number;
+  billingPeriodUnit: string;
+  createdAt: string;
+  startedAt: string;
+  activatedAt: string;
+  currentTermStart: string;
+  currentTermEnd: string;
+  nextBillingAt: string;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  dueInvoicesCount: number;
+  dueSince: string | null;
+  totalDues: number;
+  mrr: number;
+  iccid: string | null;
+  imei: string | null;
+  mdn: string | null;
+  subscriptionItems: Array<{
+    itemPriceId: string;
+    itemType: string;
+    quantity: number;
+    amount: number;
+    unitPrice: number;
+  }>;
+  shippingAddress?: {
+    line1: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+}
+
+export interface ChargebeeInvoice {
+  id: string;
+  status: string;
+  date: string;
+  dueDate: string | null;
+  paidAt: string | null;
+  subTotal: number;
+  tax: number;
+  total: number;
+  amountPaid: number;
+  amountAdjusted: number;
+  creditsApplied: number;
+  amountDue: number;
+  writeOffAmount: number;
+  dunningStatus: string | null;
+  firstInvoice: boolean;
+  recurring: boolean;
+  currencyCode: string;
+  lineItems: Array<{
+    description: string;
+    amount: number;
+    quantity: number;
+    entityType: string;
+    entityId: string;
+  }>;
+  linkedPayments: Array<{
+    txnId: string;
+    txnAmount: number;
+    txnDate: string;
+    txnStatus: string;
+  }>;
+  dunningAttempts: Array<{
+    attempt: number;
+    createdAt: string;
+    transactionId: string | null;
+  }>;
+}
+
+export interface ChargebeeTransaction {
+  id: string;
+  type: string;
+  status: string;
+  date: string;
+  amount: number;
+  currencyCode: string;
+  gateway: string;
+  paymentMethod: string;
+  referenceNumber: string | null;
+  idAtGateway: string | null;
+  errorCode: string | null;
+  errorText: string | null;
+  amountUnused: number;
+  linkedInvoices: Array<{
+    invoiceId: string;
+    appliedAmount: number;
+    appliedAt: string;
+  }>;
+}
+
+export interface ChargebeeData {
+  customer: ChargebeeCustomer | null;
+  subscriptions: ChargebeeSubscription[];
+  invoices: ChargebeeInvoice[];
+  transactions: ChargebeeTransaction[];
+  creditNotes: any[];
+  promotionalCredits: any[];
+  paymentSources: any[];
+}
+
+export interface ShopifyOrder {
+  orderNumber: string;
+  orderId: string;
+  createdAt: string;
+  updatedAt: string;
+  email: string;
+  phone: string | null;
+  financialStatus: string;
+  fulfillmentStatus: string;
+  total: string;
+  subtotal: string;
+  totalTax: string;
+  totalDiscounts: string;
+  totalShipping: string;
+  currency: string;
+  orderStatusUrl: string;
+  tags: string;
+  note: string | null;
+  source: string;
+  gateway: string;
+  processingMethod: string;
+  noteAttributes: Array<{ name: string; value: string }>;
+  lineItems: Array<{
+    name: string;
+    sku: string;
+    quantity: number;
+    price: string;
+    variantId: string;
+    productId: string;
+    fulfillmentStatus: string;
+    properties: Array<{ name: string; value: string }>;
+  }>;
+  fulfillments: Array<{
+    id: string;
+    status: string;
+    createdAt: string;
+    trackingCompany: string | null;
+    trackingNumber: string | null;
+    trackingUrl: string | null;
+    trackingNumbers: string[];
+    trackingUrls: string[];
+  }>;
+  shippingAddress: {
+    firstName: string;
+    lastName: string;
+    company: string | null;
+    address1: string;
+    address2: string | null;
+    city: string;
+    province: string;
+    provinceCode: string;
+    zip: string;
+    country: string;
+    countryCode: string;
+    phone: string | null;
+  } | null;
+  billingAddress: {
+    firstName: string;
+    lastName: string;
+    address1: string;
+    city: string;
+    province: string;
+    zip: string;
+    country: string;
+  } | null;
+  shippingLines: Array<{
+    title: string;
+    price: string;
+  }>;
+  discountCodes: Array<{
+    code: string;
+    amount: string;
+    type: string;
+  }>;
+  refunds: any[];
+}
+
+export interface ShipstationOrder {
+  orderNumber: string;
+  orderId: number;
+  orderKey: string;
+  orderDate: string;
+  createDate: string;
+  modifyDate: string;
+  paymentDate: string | null;
+  shipByDate: string | null;
+  orderStatus: string;
+  orderTotal: number;
+  amountPaid: number;
+  taxAmount: number;
+  shippingAmount: number;
+  customerId: number | null;
+  customerUsername: string | null;
+  customerEmail: string;
+  customerNotes: string | null;
+  internalNotes: string | null;
+  gift: boolean;
+  giftMessage: string | null;
+  paymentMethod: string | null;
+  requestedShippingService: string | null;
+  carrierCode: string | null;
+  serviceCode: string | null;
+  packageCode: string | null;
+  confirmation: string | null;
+  shipDate: string | null;
+  holdUntilDate: string | null;
+  customField1: string | null;
+  customField2: string | null;
+  customField3: string | null;
+  weight: { value: number; units: string } | null;
+  dimensions: { length: number; width: number; height: number; units: string } | null;
+  insuranceOptions: {
+    provider: string | null;
+    insureShipment: boolean;
+    insuredValue: number;
+  } | null;
+  advancedOptions: {
+    warehouseId: number | null;
+    nonMachinable: boolean;
+    saturdayDelivery: boolean;
+    containsAlcohol: boolean;
+    storeId: number | null;
+    customField1: string | null;
+    customField2: string | null;
+    customField3: string | null;
+    source: string | null;
+    mergedOrSplit: boolean;
+    parentId: number | null;
+  } | null;
+  items: Array<{
+    orderItemId: number;
+    lineItemKey: string | null;
+    sku: string | null;
+    name: string;
+    imageUrl: string | null;
+    quantity: number;
+    unitPrice: number;
+    taxAmount: number;
+    shippingAmount: number;
+    warehouseLocation: string | null;
+    productId: number | null;
+    fulfillmentSku: string | null;
+    upc: string | null;
+    options: Array<{ name: string; value: string }>;
+  }>;
+  shipTo: {
+    name: string;
+    company: string | null;
+    street1: string;
+    street2: string | null;
+    street3: string | null;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    phone: string | null;
+    residential: boolean;
+    addressVerified: string | null;
+  } | null;
+  billTo: {
+    name: string;
+    company: string | null;
+    street1: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+    country: string | null;
+    phone: string | null;
+  } | null;
+  shipments: Array<{
+    shipmentId: number;
+    orderId: number;
+    orderKey: string | null;
+    orderNumber: string;
+    createDate: string;
+    shipDate: string;
+    shipmentCost: number;
+    insuranceCost: number;
+    trackingNumber: string | null;
+    carrierCode: string;
+    serviceCode: string;
+    packageCode: string;
+    confirmation: string | null;
+    warehouseId: number | null;
+    voided: boolean;
+    voidDate: string | null;
+    marketplaceNotified: boolean;
+    weight: { value: number; units: string } | null;
+    dimensions: { length: number; width: number; height: number; units: string } | null;
+    shipTo: {
+      name: string;
+      street1: string;
+      city: string;
+      state: string;
+      postalCode: string;
+    } | null;
+  }>;
+}
+
+export interface CombinedOrder {
+  source: 'shopify' | 'shipstation' | 'both';
+  orderNumber: string;
+  orderId: string;
+  orderDate: string;
+  status: string;
+  fulfillmentStatus: string;
+  total: number;
+  currency: string;
+  paymentStatus: string;
+  items: Array<{
+    name: string;
+    sku: string | null;
+    quantity: number;
+    price: number;
+    imageUrl: string | null;
+    fulfillmentStatus: string | null;
+  }>;
+  shipping: {
+    name: string;
+    address1: string;
+    address2: string | null;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+    phone: string | null;
+  } | null;
+  tracking: Array<{
+    carrier: string;
+    trackingNumber: string;
+    trackingUrl: string | null;
+    shipDate: string | null;
+    status: string;
+  }>;
+  shopifyData?: ShopifyOrder;
+  shipstationData?: ShipstationOrder;
+}
+
+export interface ThingspaceDevice {
+  accountName: string;
+  state: string;
+  connected: boolean;
+  ipAddress: string | null;
+  lastConnectionDate: string | null;
+  lastActivationDate: string | null;
+  billingCycleEndDate: string | null;
+  identifiers: {
+    mdn: string | null;
+    imsi: string | null;
+    imei: string | null;
+    iccid: string | null;
+    msisdn: string | null;
+    min: string | null;
+  };
+  carrier: {
+    name: string;
+    servicePlan: string;
+    state: string;
+  } | null;
+  extendedAttributes: Record<string, string>;
+}
+
+export interface CustomerFullData {
+  chargebee: ChargebeeData;
+  orders: CombinedOrder[];
+  devices: ThingspaceDevice[];
+}
+
+async function chargebeeApiGet(endpoint: string): Promise<any> {
+  if (!CHARGEBEE_API_KEY || !CHARGEBEE_SITE) return null;
+  
+  const credentials = Buffer.from(`${CHARGEBEE_API_KEY}:`).toString('base64');
+  const response = await fetch(`https://${CHARGEBEE_SITE}.chargebee.com/api/v2${endpoint}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/json',
+    }
+  });
+  
+  if (!response.ok) return null;
+  return response.json();
+}
+
+export async function fetchChargebeeData(email: string): Promise<ChargebeeData> {
+  const result: ChargebeeData = {
+    customer: null,
+    subscriptions: [],
+    invoices: [],
+    transactions: [],
+    creditNotes: [],
+    promotionalCredits: [],
+    paymentSources: []
+  };
+  
+  try {
+    const customerData = await chargebeeApiGet(`/customers?email[is]=${encodeURIComponent(email)}`);
+    if (!customerData?.list?.length) return result;
+    
+    const c = customerData.list[0].customer;
+    result.customer = {
+      id: c.id,
+      email: c.email,
+      firstName: c.first_name || '',
+      lastName: c.last_name || '',
+      phone: c.phone || '',
+      createdAt: c.created_at ? new Date(c.created_at * 1000).toISOString() : '',
+      autoCollection: c.auto_collection,
+      promotionalCredits: (c.promotional_credits || 0) / 100,
+      refundableCredits: (c.refundable_credits || 0) / 100,
+      excessPayments: (c.excess_payments || 0) / 100,
+      unbilledCharges: (c.unbilled_charges || 0) / 100,
+      billingAddress: c.billing_address ? {
+        firstName: c.billing_address.first_name || '',
+        lastName: c.billing_address.last_name || '',
+        line1: c.billing_address.line1 || '',
+        line2: c.billing_address.line2 || '',
+        city: c.billing_address.city || '',
+        state: c.billing_address.state || '',
+        zip: c.billing_address.zip || '',
+        country: c.billing_address.country || '',
+        phone: c.billing_address.phone || ''
+      } : undefined,
+      paymentMethod: c.payment_method ? {
+        type: c.payment_method.type,
+        status: c.payment_method.status,
+        gateway: c.payment_method.gateway
+      } : undefined,
+      customFields: Object.fromEntries(
+        Object.entries(c).filter(([k]) => k.startsWith('cf_')).map(([k, v]) => [k, String(v)])
+      )
+    };
+    
+    const [subsData, invoicesData, txnData, creditNotesData, promoCreditsData, paymentSourcesData] = await Promise.all([
+      chargebeeApiGet(`/subscriptions?customer_id[is]=${c.id}&limit=50`),
+      chargebeeApiGet(`/invoices?customer_id[is]=${c.id}&limit=50&sort_by[desc]=date`),
+      chargebeeApiGet(`/transactions?customer_id[is]=${c.id}&limit=50&sort_by[desc]=date`),
+      chargebeeApiGet(`/credit_notes?customer_id[is]=${c.id}&limit=20`),
+      chargebeeApiGet(`/promotional_credits?customer_id[is]=${c.id}&limit=20`),
+      chargebeeApiGet(`/payment_sources?customer_id[is]=${c.id}`)
+    ]);
+    
+    if (subsData?.list) {
+      result.subscriptions = subsData.list.map((item: any) => {
+        const s = item.subscription;
+        return {
+          id: s.id,
+          planId: s.subscription_items?.[0]?.item_price_id || s.plan_id || 'Unknown',
+          status: s.status,
+          planAmount: (s.subscription_items?.[0]?.amount || s.plan_amount || 0) / 100,
+          billingPeriod: s.billing_period,
+          billingPeriodUnit: s.billing_period_unit,
+          createdAt: s.created_at ? new Date(s.created_at * 1000).toISOString() : '',
+          startedAt: s.started_at ? new Date(s.started_at * 1000).toISOString() : '',
+          activatedAt: s.activated_at ? new Date(s.activated_at * 1000).toISOString() : '',
+          currentTermStart: s.current_term_start ? new Date(s.current_term_start * 1000).toISOString() : '',
+          currentTermEnd: s.current_term_end ? new Date(s.current_term_end * 1000).toISOString() : '',
+          nextBillingAt: s.next_billing_at ? new Date(s.next_billing_at * 1000).toISOString() : '',
+          cancelledAt: s.cancelled_at ? new Date(s.cancelled_at * 1000).toISOString() : null,
+          cancelReason: s.cancel_reason || null,
+          dueInvoicesCount: s.due_invoices_count || 0,
+          dueSince: s.due_since ? new Date(s.due_since * 1000).toISOString() : null,
+          totalDues: (s.total_dues || 0) / 100,
+          mrr: (s.mrr || 0) / 100,
+          iccid: s.cf_SIM_ID_ICCID || null,
+          imei: s.cf_Device_IMEI || null,
+          mdn: s.cf_mdn || null,
+          subscriptionItems: (s.subscription_items || []).map((si: any) => ({
+            itemPriceId: si.item_price_id,
+            itemType: si.item_type,
+            quantity: si.quantity || 1,
+            amount: (si.amount || 0) / 100,
+            unitPrice: (si.unit_price || 0) / 100
+          })),
+          shippingAddress: s.shipping_address ? {
+            line1: s.shipping_address.line1 || '',
+            city: s.shipping_address.city || '',
+            state: s.shipping_address.state || '',
+            zip: s.shipping_address.zip || '',
+            country: s.shipping_address.country || ''
+          } : undefined
+        };
+      });
+    }
+    
+    if (invoicesData?.list) {
+      result.invoices = invoicesData.list.map((item: any) => {
+        const inv = item.invoice;
+        return {
+          id: inv.id,
+          status: inv.status,
+          date: inv.date ? new Date(inv.date * 1000).toISOString() : '',
+          dueDate: inv.due_date ? new Date(inv.due_date * 1000).toISOString() : null,
+          paidAt: inv.paid_at ? new Date(inv.paid_at * 1000).toISOString() : null,
+          subTotal: (inv.sub_total || 0) / 100,
+          tax: (inv.tax || 0) / 100,
+          total: (inv.total || 0) / 100,
+          amountPaid: (inv.amount_paid || 0) / 100,
+          amountAdjusted: (inv.amount_adjusted || 0) / 100,
+          creditsApplied: (inv.credits_applied || 0) / 100,
+          amountDue: (inv.amount_due || 0) / 100,
+          writeOffAmount: (inv.write_off_amount || 0) / 100,
+          dunningStatus: inv.dunning_status || null,
+          firstInvoice: inv.first_invoice || false,
+          recurring: inv.recurring || false,
+          currencyCode: inv.currency_code || 'USD',
+          lineItems: (inv.line_items || []).map((li: any) => ({
+            description: li.description || '',
+            amount: (li.amount || 0) / 100,
+            quantity: li.quantity || 1,
+            entityType: li.entity_type || '',
+            entityId: li.entity_id || ''
+          })),
+          linkedPayments: (inv.linked_payments || []).map((lp: any) => ({
+            txnId: lp.txn_id,
+            txnAmount: (lp.txn_amount || 0) / 100,
+            txnDate: lp.txn_date ? new Date(lp.txn_date * 1000).toISOString() : '',
+            txnStatus: lp.txn_status
+          })),
+          dunningAttempts: (inv.dunning_attempts || []).map((da: any) => ({
+            attempt: da.attempt,
+            createdAt: da.created_at ? new Date(da.created_at * 1000).toISOString() : '',
+            transactionId: da.transaction_id || null
+          }))
+        };
+      });
+    }
+    
+    if (txnData?.list) {
+      result.transactions = txnData.list.map((item: any) => {
+        const txn = item.transaction;
+        return {
+          id: txn.id,
+          type: txn.type,
+          status: txn.status,
+          date: txn.date ? new Date(txn.date * 1000).toISOString() : '',
+          amount: (txn.amount || 0) / 100,
+          currencyCode: txn.currency_code || 'USD',
+          gateway: txn.gateway || '',
+          paymentMethod: txn.payment_method || '',
+          referenceNumber: txn.reference_number || null,
+          idAtGateway: txn.id_at_gateway || null,
+          errorCode: txn.error_code || null,
+          errorText: txn.error_text || null,
+          amountUnused: (txn.amount_unused || 0) / 100,
+          linkedInvoices: (txn.linked_invoices || []).map((li: any) => ({
+            invoiceId: li.invoice_id,
+            appliedAmount: (li.applied_amount || 0) / 100,
+            appliedAt: li.applied_at ? new Date(li.applied_at * 1000).toISOString() : ''
+          }))
+        };
+      });
+    }
+    
+    result.creditNotes = creditNotesData?.list || [];
+    result.promotionalCredits = promoCreditsData?.list || [];
+    result.paymentSources = paymentSourcesData?.list || [];
+    
+  } catch (error) {
+    console.error('Chargebee fetch error:', error);
+  }
+  
+  return result;
+}
+
+export async function fetchShopifyOrders(email: string): Promise<ShopifyOrder[]> {
+  if (!SHOPIFY_ADMIN_KEY) return [];
+  
+  try {
+    const response = await fetch(
+      `https://nomadinternet.myshopify.com/admin/api/2024-01/orders.json?status=any&limit=250`,
+      {
+        method: 'GET',
+        headers: {
+          'X-Shopify-Access-Token': SHOPIFY_ADMIN_KEY,
+          'Content-Type': 'application/json',
+        }
+      }
+    );
+    
+    if (!response.ok) return [];
+    
+    const data = await response.json() as any;
+    const orders = (data.orders || []).filter(
+      (o: any) => o.email?.toLowerCase() === email.toLowerCase()
+    );
+    
+    return orders.map((o: any) => ({
+      orderNumber: o.name,
+      orderId: String(o.id),
+      createdAt: o.created_at,
+      updatedAt: o.updated_at,
+      email: o.email,
+      phone: o.phone || null,
+      financialStatus: o.financial_status,
+      fulfillmentStatus: o.fulfillment_status || 'unfulfilled',
+      total: o.total_price,
+      subtotal: o.subtotal_price,
+      totalTax: o.total_tax,
+      totalDiscounts: o.total_discounts,
+      totalShipping: o.total_shipping_price_set?.shop_money?.amount || '0.00',
+      currency: o.currency,
+      orderStatusUrl: o.order_status_url || '',
+      tags: o.tags || '',
+      note: o.note || null,
+      source: o.source_name || '',
+      gateway: o.gateway || '',
+      processingMethod: o.processing_method || '',
+      noteAttributes: (o.note_attributes || []).map((a: any) => ({ name: a.name, value: a.value })),
+      lineItems: (o.line_items || []).map((li: any) => ({
+        name: li.name,
+        sku: li.sku || '',
+        quantity: li.quantity,
+        price: li.price,
+        variantId: String(li.variant_id || ''),
+        productId: String(li.product_id || ''),
+        fulfillmentStatus: li.fulfillment_status || 'unfulfilled',
+        properties: (li.properties || []).map((p: any) => ({ name: p.name, value: p.value }))
+      })),
+      fulfillments: (o.fulfillments || []).map((f: any) => ({
+        id: String(f.id),
+        status: f.status,
+        createdAt: f.created_at,
+        trackingCompany: f.tracking_company || null,
+        trackingNumber: f.tracking_number || null,
+        trackingUrl: f.tracking_url || null,
+        trackingNumbers: f.tracking_numbers || [],
+        trackingUrls: f.tracking_urls || []
+      })),
+      shippingAddress: o.shipping_address ? {
+        firstName: o.shipping_address.first_name || '',
+        lastName: o.shipping_address.last_name || '',
+        company: o.shipping_address.company || null,
+        address1: o.shipping_address.address1 || '',
+        address2: o.shipping_address.address2 || null,
+        city: o.shipping_address.city || '',
+        province: o.shipping_address.province || '',
+        provinceCode: o.shipping_address.province_code || '',
+        zip: o.shipping_address.zip || '',
+        country: o.shipping_address.country || '',
+        countryCode: o.shipping_address.country_code || '',
+        phone: o.shipping_address.phone || null
+      } : null,
+      billingAddress: o.billing_address ? {
+        firstName: o.billing_address.first_name || '',
+        lastName: o.billing_address.last_name || '',
+        address1: o.billing_address.address1 || '',
+        city: o.billing_address.city || '',
+        province: o.billing_address.province || '',
+        zip: o.billing_address.zip || '',
+        country: o.billing_address.country || ''
+      } : null,
+      shippingLines: (o.shipping_lines || []).map((sl: any) => ({
+        title: sl.title,
+        price: sl.price
+      })),
+      discountCodes: (o.discount_codes || []).map((dc: any) => ({
+        code: dc.code,
+        amount: dc.amount,
+        type: dc.type
+      })),
+      refunds: o.refunds || []
+    }));
+  } catch (error) {
+    console.error('Shopify fetch error:', error);
+    return [];
+  }
+}
+
+export async function fetchShipstationOrders(email: string): Promise<ShipstationOrder[]> {
+  if (!SHIPSTATION_API_KEY || !SHIPSTATION_API_SECRET) return [];
+  
+  try {
+    const credentials = Buffer.from(`${SHIPSTATION_API_KEY}:${SHIPSTATION_API_SECRET}`).toString('base64');
+    let allOrders: any[] = [];
+    let page = 1;
+    const pageSize = 100;
+    
+    while (page <= 5) {
+      const response = await fetch(
+        `https://ssapi.shipstation.com/orders?pageSize=${pageSize}&page=${page}&sortBy=OrderDate&sortDir=DESC`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+      
+      if (!response.ok) break;
+      
+      const data = await response.json() as any;
+      const orders = data.orders || [];
+      allOrders = allOrders.concat(orders);
+      
+      if (orders.length < pageSize) break;
+      page++;
+    }
+    
+    const customerOrders = allOrders.filter(
+      (o: any) => o.customerEmail?.toLowerCase() === email.toLowerCase()
+    );
+    
+    return customerOrders.map((o: any) => ({
+      orderNumber: o.orderNumber,
+      orderId: o.orderId,
+      orderKey: o.orderKey,
+      orderDate: o.orderDate,
+      createDate: o.createDate,
+      modifyDate: o.modifyDate,
+      paymentDate: o.paymentDate || null,
+      shipByDate: o.shipByDate || null,
+      orderStatus: o.orderStatus,
+      orderTotal: o.orderTotal,
+      amountPaid: o.amountPaid || 0,
+      taxAmount: o.taxAmount || 0,
+      shippingAmount: o.shippingAmount || 0,
+      customerId: o.customerId || null,
+      customerUsername: o.customerUsername || null,
+      customerEmail: o.customerEmail,
+      customerNotes: o.customerNotes || null,
+      internalNotes: o.internalNotes || null,
+      gift: o.gift || false,
+      giftMessage: o.giftMessage || null,
+      paymentMethod: o.paymentMethod || null,
+      requestedShippingService: o.requestedShippingService || null,
+      carrierCode: o.carrierCode || null,
+      serviceCode: o.serviceCode || null,
+      packageCode: o.packageCode || null,
+      confirmation: o.confirmation || null,
+      shipDate: o.shipDate || null,
+      holdUntilDate: o.holdUntilDate || null,
+      customField1: o.customField1 || null,
+      customField2: o.customField2 || null,
+      customField3: o.customField3 || null,
+      weight: o.weight || null,
+      dimensions: o.dimensions || null,
+      insuranceOptions: o.insuranceOptions || null,
+      advancedOptions: o.advancedOptions || null,
+      items: (o.items || []).map((i: any) => ({
+        orderItemId: i.orderItemId,
+        lineItemKey: i.lineItemKey || null,
+        sku: i.sku || null,
+        name: i.name,
+        imageUrl: i.imageUrl || null,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice || 0,
+        taxAmount: i.taxAmount || 0,
+        shippingAmount: i.shippingAmount || 0,
+        warehouseLocation: i.warehouseLocation || null,
+        productId: i.productId || null,
+        fulfillmentSku: i.fulfillmentSku || null,
+        upc: i.upc || null,
+        options: (i.options || []).map((opt: any) => ({ name: opt.name, value: opt.value }))
+      })),
+      shipTo: o.shipTo ? {
+        name: o.shipTo.name,
+        company: o.shipTo.company || null,
+        street1: o.shipTo.street1,
+        street2: o.shipTo.street2 || null,
+        street3: o.shipTo.street3 || null,
+        city: o.shipTo.city,
+        state: o.shipTo.state,
+        postalCode: o.shipTo.postalCode,
+        country: o.shipTo.country,
+        phone: o.shipTo.phone || null,
+        residential: o.shipTo.residential || false,
+        addressVerified: o.shipTo.addressVerified || null
+      } : null,
+      billTo: o.billTo ? {
+        name: o.billTo.name,
+        company: o.billTo.company || null,
+        street1: o.billTo.street1 || null,
+        city: o.billTo.city || null,
+        state: o.billTo.state || null,
+        postalCode: o.billTo.postalCode || null,
+        country: o.billTo.country || null,
+        phone: o.billTo.phone || null
+      } : null,
+      shipments: (o.shipments || []).map((s: any) => ({
+        shipmentId: s.shipmentId,
+        orderId: s.orderId,
+        orderKey: s.orderKey || null,
+        orderNumber: s.orderNumber,
+        createDate: s.createDate,
+        shipDate: s.shipDate,
+        shipmentCost: s.shipmentCost || 0,
+        insuranceCost: s.insuranceCost || 0,
+        trackingNumber: s.trackingNumber || null,
+        carrierCode: s.carrierCode,
+        serviceCode: s.serviceCode,
+        packageCode: s.packageCode,
+        confirmation: s.confirmation || null,
+        warehouseId: s.warehouseId || null,
+        voided: s.voided || false,
+        voidDate: s.voidDate || null,
+        marketplaceNotified: s.marketplaceNotified || false,
+        weight: s.weight || null,
+        dimensions: s.dimensions || null,
+        shipTo: s.shipTo ? {
+          name: s.shipTo.name,
+          street1: s.shipTo.street1,
+          city: s.shipTo.city,
+          state: s.shipTo.state,
+          postalCode: s.shipTo.postalCode
+        } : null
+      }))
+    }));
+  } catch (error) {
+    console.error('Shipstation fetch error:', error);
+    return [];
+  }
+}
+
+export function combineOrders(shopifyOrders: ShopifyOrder[], shipstationOrders: ShipstationOrder[]): CombinedOrder[] {
+  const combined: CombinedOrder[] = [];
+  const processedShipstation = new Set<string>();
+  
+  for (const so of shopifyOrders) {
+    const orderNum = so.orderNumber.replace('#', '');
+    const matchingSS = shipstationOrders.find(ss => ss.orderNumber === orderNum || ss.orderNumber === so.orderNumber);
+    
+    if (matchingSS) {
+      processedShipstation.add(String(matchingSS.orderId));
+    }
+    
+    const tracking: CombinedOrder['tracking'] = [];
+    
+    for (const f of so.fulfillments) {
+      if (f.trackingNumber) {
+        tracking.push({
+          carrier: f.trackingCompany || 'Unknown',
+          trackingNumber: f.trackingNumber,
+          trackingUrl: f.trackingUrl || null,
+          shipDate: f.createdAt,
+          status: f.status
+        });
+      }
+    }
+    
+    if (matchingSS?.shipments) {
+      for (const s of matchingSS.shipments) {
+        if (s.trackingNumber && !tracking.find(t => t.trackingNumber === s.trackingNumber)) {
+          tracking.push({
+            carrier: s.carrierCode,
+            trackingNumber: s.trackingNumber,
+            trackingUrl: null,
+            shipDate: s.shipDate,
+            status: s.voided ? 'voided' : 'shipped'
+          });
+        }
+      }
+    }
+    
+    combined.push({
+      source: matchingSS ? 'both' : 'shopify',
+      orderNumber: so.orderNumber,
+      orderId: so.orderId,
+      orderDate: so.createdAt,
+      status: matchingSS?.orderStatus || so.fulfillmentStatus,
+      fulfillmentStatus: so.fulfillmentStatus,
+      total: parseFloat(so.total),
+      currency: so.currency,
+      paymentStatus: so.financialStatus,
+      items: so.lineItems.map(li => ({
+        name: li.name,
+        sku: li.sku || null,
+        quantity: li.quantity,
+        price: parseFloat(li.price),
+        imageUrl: null,
+        fulfillmentStatus: li.fulfillmentStatus
+      })),
+      shipping: so.shippingAddress ? {
+        name: `${so.shippingAddress.firstName} ${so.shippingAddress.lastName}`,
+        address1: so.shippingAddress.address1,
+        address2: so.shippingAddress.address2,
+        city: so.shippingAddress.city,
+        state: so.shippingAddress.province,
+        zip: so.shippingAddress.zip,
+        country: so.shippingAddress.country,
+        phone: so.shippingAddress.phone
+      } : null,
+      tracking,
+      shopifyData: so,
+      shipstationData: matchingSS
+    });
+  }
+  
+  for (const ss of shipstationOrders) {
+    if (!processedShipstation.has(String(ss.orderId))) {
+      const tracking: CombinedOrder['tracking'] = [];
+      
+      for (const s of ss.shipments || []) {
+        if (s.trackingNumber) {
+          tracking.push({
+            carrier: s.carrierCode,
+            trackingNumber: s.trackingNumber,
+            trackingUrl: null,
+            shipDate: s.shipDate,
+            status: s.voided ? 'voided' : 'shipped'
+          });
+        }
+      }
+      
+      combined.push({
+        source: 'shipstation',
+        orderNumber: ss.orderNumber,
+        orderId: String(ss.orderId),
+        orderDate: ss.orderDate,
+        status: ss.orderStatus,
+        fulfillmentStatus: ss.orderStatus,
+        total: ss.orderTotal,
+        currency: 'USD',
+        paymentStatus: ss.amountPaid >= ss.orderTotal ? 'paid' : 'pending',
+        items: ss.items.map(i => ({
+          name: i.name,
+          sku: i.sku,
+          quantity: i.quantity,
+          price: i.unitPrice,
+          imageUrl: i.imageUrl,
+          fulfillmentStatus: null
+        })),
+        shipping: ss.shipTo ? {
+          name: ss.shipTo.name,
+          address1: ss.shipTo.street1,
+          address2: ss.shipTo.street2,
+          city: ss.shipTo.city,
+          state: ss.shipTo.state,
+          zip: ss.shipTo.postalCode,
+          country: ss.shipTo.country,
+          phone: ss.shipTo.phone
+        } : null,
+        tracking,
+        shipstationData: ss
+      });
+    }
+  }
+  
+  combined.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+  
+  return combined;
+}
+
+async function getThingspaceTokens(): Promise<{ oauth: string; session: string } | null> {
+  if (!THINGSPACE_CLIENT_ID || !THINGSPACE_CLIENT_SECRET || !THINGSPACE_USERNAME || !THINGSPACE_PASSWORD) {
+    return null;
+  }
+  
+  try {
+    const credentials = Buffer.from(`${THINGSPACE_CLIENT_ID}:${THINGSPACE_CLIENT_SECRET}`).toString('base64');
+    
+    const oauthResponse = await fetch('https://thingspace.verizon.com/api/ts/v1/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'grant_type=client_credentials'
+    });
+    
+    if (!oauthResponse.ok) return null;
+    
+    const oauthData = await oauthResponse.json() as any;
+    const oauthToken = oauthData.access_token;
+    
+    const sessionResponse = await fetch('https://thingspace.verizon.com/api/m2m/v1/session/login', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${oauthToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: THINGSPACE_USERNAME,
+        password: THINGSPACE_PASSWORD
+      })
+    });
+    
+    if (!sessionResponse.ok) return null;
+    
+    const sessionData = await sessionResponse.json() as any;
+    
+    return { oauth: oauthToken, session: sessionData.sessionToken };
+  } catch (error) {
+    console.error('ThingSpace auth error:', error);
+    return null;
+  }
+}
+
+export async function fetchThingspaceDevice(iccid: string): Promise<ThingspaceDevice | null> {
+  if (!THINGSPACE_ACCOUNT_NAME) return null;
+  
+  const tokens = await getThingspaceTokens();
+  if (!tokens) return null;
+  
+  try {
+    const response = await fetch('https://thingspace.verizon.com/api/m2m/v1/devices/actions/list', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${tokens.oauth}`,
+        'VZ-M2M-Token': tokens.session,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        accountName: THINGSPACE_ACCOUNT_NAME,
+        maxNumberOfDevices: 500,
+        largestDeviceIdSeen: 0
+      })
+    });
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json() as any;
+    const devices = data.devices || [];
+    
+    const device = devices.find((d: any) => 
+      d.deviceIds?.some((id: any) => id.id === iccid)
+    );
+    
+    if (!device) return null;
+    
+    const getDeviceId = (kind: string) => {
+      const found = device.deviceIds?.find((id: any) => id.kind === kind);
+      return found?.id || null;
+    };
+    
+    const extendedAttrs: Record<string, string> = {};
+    for (const attr of device.extendedAttributes || []) {
+      extendedAttrs[attr.key] = attr.value;
+    }
+    
+    return {
+      accountName: device.accountName,
+      state: device.state || 'unknown',
+      connected: device.connected || false,
+      ipAddress: device.ipAddress || null,
+      lastConnectionDate: device.lastConnectionDate || null,
+      lastActivationDate: device.lastActivationDate || null,
+      billingCycleEndDate: device.billingCycleEndDate || null,
+      identifiers: {
+        mdn: getDeviceId('mdn'),
+        imsi: getDeviceId('imsi'),
+        imei: getDeviceId('imei'),
+        iccid: getDeviceId('iccid'),
+        msisdn: getDeviceId('msisdn'),
+        min: getDeviceId('min')
+      },
+      carrier: device.carrierInformations?.[0] ? {
+        name: device.carrierInformations[0].carrierName,
+        servicePlan: device.carrierInformations[0].servicePlan,
+        state: device.carrierInformations[0].state
+      } : null,
+      extendedAttributes: extendedAttrs
+    };
+  } catch (error) {
+    console.error('ThingSpace fetch error:', error);
+    return null;
+  }
+}
+
+export async function fetchCustomerFullData(email: string): Promise<CustomerFullData> {
+  const [chargebee, shopifyOrders, shipstationOrders] = await Promise.all([
+    fetchChargebeeData(email),
+    fetchShopifyOrders(email),
+    fetchShipstationOrders(email)
+  ]);
+  
+  const orders = combineOrders(shopifyOrders, shipstationOrders);
+  
+  const devices: ThingspaceDevice[] = [];
+  const iccidsToCheck = new Set<string>();
+  
+  for (const sub of chargebee.subscriptions) {
+    if (sub.iccid && sub.iccid !== 'pending' && sub.iccid !== 'redemption_pending') {
+      iccidsToCheck.add(sub.iccid);
+    }
+  }
+  
+  for (const iccid of iccidsToCheck) {
+    const device = await fetchThingspaceDevice(iccid);
+    if (device) {
+      devices.push(device);
+    }
+  }
+  
+  return {
+    chargebee,
+    orders,
+    devices
+  };
+}

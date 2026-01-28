@@ -4,6 +4,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
+import { fetchCustomerFullData } from "./services";
 
 const app = express();
 const PORT = 3001;
@@ -770,6 +771,32 @@ app.post("/api/auth/verify-phone-change", async (req, res) => {
   } catch (error) {
     console.error("Verify phone change error:", error);
     res.status(500).json({ error: "Failed to verify phone number" });
+  }
+});
+
+app.get("/api/customer/full-data", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const session = await storage.getSessionByToken(token);
+    if (!session) {
+      return res.status(401).json({ error: "Invalid session" });
+    }
+
+    const customer = await storage.getCustomer(session.customerId);
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+
+    const fullData = await fetchCustomerFullData(customer.email);
+    res.json(fullData);
+  } catch (error) {
+    console.error("Fetch full data error:", error);
+    res.status(500).json({ error: "Failed to fetch customer data" });
   }
 });
 
