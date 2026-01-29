@@ -2,34 +2,6 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ChatWidget } from '../components/ChatWidget'
 
-function RawDataPanel({ data, title }: { data: any; title: string }) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  
-  return (
-    <div className="mt-4 border-t border-gray-100 pt-4">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-sm text-muted hover:text-primary transition-colors"
-      >
-        <svg 
-          className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        {isExpanded ? 'Hide' : 'Show'} Full {title} Data
-      </button>
-      {isExpanded && (
-        <pre className="mt-3 p-4 bg-gray-900 text-green-400 rounded-lg text-xs overflow-x-auto max-h-96 overflow-y-auto">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      )}
-    </div>
-  )
-}
-
 interface Customer {
   id: number
   email: string
@@ -742,8 +714,7 @@ export default function Dashboard() {
                               </button>
                             </div>
                             
-                            <RawDataPanel data={sub} title="Subscription" />
-                          </div>
+                                                      </div>
                         </div>
                       </div>
                     ))}
@@ -867,8 +838,7 @@ export default function Dashboard() {
                       </div>
                     )}
                     
-                    <RawDataPanel data={order} title="Order" />
-                  </div>
+                                      </div>
                 ))}
                 {(!fullData?.orders.length) && (
                   <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
@@ -947,8 +917,7 @@ export default function Dashboard() {
                   </table>
                 </div>
                 
-                <RawDataPanel data={allInvoices} title="Invoices" />
-
+                
                 <h3 className="text-lg font-semibold text-text mt-8">Transaction History</h3>
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                   <table className="w-full">
@@ -983,8 +952,7 @@ export default function Dashboard() {
                   </table>
                 </div>
                 
-                <RawDataPanel data={allTransactions} title="Transactions" />
-              </div>
+                              </div>
             )}
 
             {activeTab === 'internet' && (
@@ -1040,8 +1008,7 @@ export default function Dashboard() {
                       </div>
                     )}
                     
-                    <RawDataPanel data={device} title="Device" />
-                  </div>
+                                      </div>
                 ))}
                 {(!fullData?.devices.length) && (
                   <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
