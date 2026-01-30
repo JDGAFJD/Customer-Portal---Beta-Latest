@@ -172,11 +172,11 @@ export default function SignIn() {
 
         {showNewPortalMessage && (
           <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/30 rounded-xl p-5 text-center">
-            <div className="text-2xl mb-2">🎉</div>
             <h3 className="text-lg font-semibold text-text mb-2">Welcome to Our New Portal!</h3>
             <p className="text-sm text-muted mb-4">
               We've launched an improved customer portal with enhanced features. 
-              Please sign up to create your account and access your Nomad Internet services.
+              It looks like you haven't signed up yet. Please sign up to create your account, 
+              or double-check that the email address you entered is correct.
             </p>
             <Link 
               to="/signup" 
