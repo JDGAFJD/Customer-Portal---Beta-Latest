@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import ForgotPassword from './pages/ForgotPassword'
 import AccountSettings from './pages/AccountSettings'
 import ActivityLog from './pages/ActivityLog'
+import TestLogin from './pages/TestLogin'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/account" element={<AccountSettings />} />
       <Route path="/activity" element={<ActivityLog />} />
+      <Route path="/testing6699452" element={<TestLogin />} />
     </Routes>
   )
 }
