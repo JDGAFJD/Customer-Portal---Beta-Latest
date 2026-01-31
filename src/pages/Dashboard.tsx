@@ -945,63 +945,127 @@ export default function Dashboard() {
             )}
 
             {activeTab === 'internet' && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-text">Your Internet</h2>
-                {fullData?.devices.map((device, idx) => (
-                  <div key={idx} className="bg-white rounded-lg border border-gray-200 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className={`w-3 h-3 rounded-full ${device.connected ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                      <h3 className="text-lg font-semibold text-text">
-                        {device.identifiers.mdn || device.identifiers.iccid || 'Device'}
-                      </h3>
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(device.carrier?.state || device.state)}`}>
-                        {device.carrier?.state || device.state}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted">MDN</p>
-                        <p className="font-mono">{device.identifiers.mdn || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted">ICCID</p>
-                        <p className="font-mono text-xs">{device.identifiers.iccid || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted">IMEI</p>
-                        <p className="font-mono text-xs">{device.identifiers.imei || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted">IP Address</p>
-                        <p className="font-mono">{device.ipAddress || 'N/A'}</p>
-                      </div>
-                    </div>
-
-                    {device.carrier && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-text">Your Internet Services</h2>
+                {allSubscriptions.map((subscription, idx) => {
+                  const device = fullData?.devices.find(d => 
+                    (subscription.iccid && d.identifiers.iccid === subscription.iccid) || 
+                    (subscription.imei && d.identifiers.imei === subscription.imei) ||
+                    (subscription.mdn && d.identifiers.mdn === subscription.mdn)
+                  )
+                  const lineState = device?.carrier?.state || device?.state || null
+                  const normalizedState = lineState?.toLowerCase().replace(/[_-]/g, ' ').trim() || ''
+                  
+                  const getLineStatusInfo = () => {
+                    const redStates = ['deactive', 'deactivate', 'deactivated', 'suspend', 'suspended', 'pending suspend', 'pending suspended']
+                    const yellowStates = ['pending resume', 'pending account update', 'pending activation', 'pending']
+                    const greenStates = ['active', 'activated']
+                    
+                    if (!lineState || redStates.some(s => normalizedState.includes(s) || normalizedState === s)) {
+                      return { color: 'red', icon: 'disconnected', label: 'Disconnected' }
+                    } else if (yellowStates.some(s => normalizedState.includes(s) || normalizedState === s)) {
+                      return { color: 'yellow', icon: 'pending', label: 'Pending' }
+                    } else if (greenStates.some(s => normalizedState.includes(s) || normalizedState === s)) {
+                      return { color: 'green', icon: 'connected', label: 'Connected' }
+                    }
+                    return { color: 'red', icon: 'disconnected', label: 'Unknown' }
+                  }
+                  
+                  const lineStatus = getLineStatusInfo()
+                  const isActive = subscription.status === 'active'
+                  const isPaid = subscription.dueInvoicesCount === 0 && subscription.totalDues === 0
+                  
+                  return (
+                    <div key={subscription.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      <div className="p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                           <div>
-                            <p className="text-muted">Carrier</p>
-                            <p className="font-medium">{device.carrier.name}</p>
+                            <h3 className="text-lg font-bold text-text">{subscription.planId}</h3>
+                            <p className="text-sm text-muted">Subscription #{subscription.id}</p>
                           </div>
-                          <div>
-                            <p className="text-muted">Service Plan</p>
-                            <p className="font-mono text-xs">{device.carrier.servicePlan}</p>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                              isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {isActive ? 'Active' : 'Inactive'}
+                            </span>
+                            <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                              isPaid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {isPaid ? 'Paid' : 'Unpaid'}
+                            </span>
                           </div>
-                          <div>
-                            <p className="text-muted">Last Connected</p>
-                            <p className="font-medium">{formatDate(device.lastConnectionDate || '')}</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-muted uppercase tracking-wide mb-1">IMEI</p>
+                            <p className="font-mono text-sm text-text">{subscription.imei || 'N/A'}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-xs text-muted uppercase tracking-wide mb-1">ICCID</p>
+                            <p className="font-mono text-sm text-text break-all">{subscription.iccid || 'N/A'}</p>
+                          </div>
+                        </div>
+                        
+                        <div className={`rounded-lg p-4 border-2 ${
+                          lineStatus.color === 'green' ? 'bg-green-50 border-green-200' :
+                          lineStatus.color === 'yellow' ? 'bg-yellow-50 border-yellow-200' :
+                          'bg-red-50 border-red-200'
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            {lineStatus.color === 'green' && (
+                              <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                </svg>
+                              </div>
+                            )}
+                            {lineStatus.color === 'yellow' && (
+                              <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </div>
+                            )}
+                            {lineStatus.color === 'red' && (
+                              <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a5 5 0 01-7.072-7.072m7.072 7.072L6.343 17.657M6.343 6.343L3 3m3.343 3.343a5 5 0 017.072 0" />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <p className={`font-semibold ${
+                                lineStatus.color === 'green' ? 'text-green-800' :
+                                lineStatus.color === 'yellow' ? 'text-yellow-800' :
+                                'text-red-800'
+                              }`}>
+                                Internet {lineStatus.label}
+                              </p>
+                              <p className={`text-sm ${
+                                lineStatus.color === 'green' ? 'text-green-600' :
+                                lineStatus.color === 'yellow' ? 'text-yellow-600' :
+                                'text-red-600'
+                              }`}>
+                                {lineState ? `Line Status: ${lineState}` : 'Unable to retrieve line status'}
+                              </p>
+                            </div>
+                            {device?.ipAddress && lineStatus.color === 'green' && (
+                              <div className="text-right">
+                                <p className="text-xs text-green-600">IP Address</p>
+                                <p className="font-mono text-sm text-green-800">{device.ipAddress}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
-                    )}
-                    
-                                      </div>
-                ))}
-                {(!fullData?.devices.length) && (
+                    </div>
+                  )
+                })}
+                {allSubscriptions.length === 0 && (
                   <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                    <p className="text-muted">No devices found</p>
+                    <p className="text-muted">No subscriptions found</p>
                   </div>
                 )}
               </div>
