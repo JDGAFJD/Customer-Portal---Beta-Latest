@@ -161,10 +161,13 @@ export default function Dashboard() {
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null)
   const [troubleshootingSubscription, setTroubleshootingSubscription] = useState<string | null>(null)
   const [troubleshootingStatus, setTroubleshootingStatus] = useState<{
-    step: 'checking' | 'resuming' | 'success' | 'error' | 'already_active'
+    step: 'checking' | 'resuming' | 'waiting' | 'reboot_prompt' | 'extended_wait' | 'success' | 'error' | 'already_active'
     message: string
     deviceStatus?: ThingspaceDevice
+    timeRemaining?: number
+    iccid?: string
   } | null>(null)
+  const [troubleshootingTimer, setTroubleshootingTimer] = useState<ReturnType<typeof setInterval> | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -407,6 +410,10 @@ export default function Dashboard() {
 
   const handleTroubleshooting = async (subscriptionId: string, iccid: string | null, imei: string | null, mdn: string | null, lineStatus: string | null) => {
     if (troubleshootingSubscription === subscriptionId) {
+      if (troubleshootingTimer) {
+        clearInterval(troubleshootingTimer)
+        setTroubleshootingTimer(null)
+      }
       setTroubleshootingSubscription(null)
       setTroubleshootingStatus(null)
       return
@@ -438,7 +445,8 @@ export default function Dashboard() {
     if (isSuspended) {
       setTroubleshootingStatus({ 
         step: 'resuming', 
-        message: `Line is suspended. Resuming ICCID: ${iccid || identifier}...`
+        message: `Line is suspended. Resuming ICCID: ${iccid || identifier}...`,
+        iccid: iccid || identifier
       })
 
       try {
@@ -454,10 +462,7 @@ export default function Dashboard() {
 
         if (resumeResponse.ok) {
           await resumeResponse.json()
-          setTroubleshootingStatus({ 
-            step: 'success', 
-            message: `Resume request submitted for ICCID: ${iccid || identifier}. Your line should be active within a few minutes.`
-          })
+          startWaitingTimer(identifier, identifierType, iccid || identifier)
         } else {
           const errorData = await resumeResponse.json()
           setTroubleshootingStatus({ 
@@ -475,6 +480,117 @@ export default function Dashboard() {
         message: `Line status: ${lineStatus || 'unknown'}. Please contact support for assistance.`
       })
     }
+  }
+
+  const startWaitingTimer = (identifier: string, identifierType: string, iccidDisplay: string) => {
+    let timeRemaining = 300
+    
+    setTroubleshootingStatus({
+      step: 'waiting',
+      message: 'Resume request submitted. Waiting for line to activate...',
+      timeRemaining,
+      iccid: iccidDisplay
+    })
+
+    const timer = setInterval(() => {
+      timeRemaining -= 1
+      
+      if (timeRemaining <= 0) {
+        clearInterval(timer)
+        setTroubleshootingTimer(null)
+        setTroubleshootingStatus({
+          step: 'reboot_prompt',
+          message: 'Please reboot your router now to complete the activation.',
+          iccid: iccidDisplay
+        })
+      } else {
+        setTroubleshootingStatus(prev => prev ? { ...prev, timeRemaining } : null)
+      }
+    }, 1000)
+
+    setTroubleshootingTimer(timer)
+  }
+
+  const handleRebootConfirmed = async (identifier: string, identifierType: string, iccidDisplay: string) => {
+    const token = localStorage.getItem('auth_token')
+    
+    try {
+      const statusResponse = await fetch('/api/device/status', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier, identifierType })
+      })
+
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json()
+        const device = statusData.device
+        const currentState = (device?.state || device?.carrier?.state || '').toLowerCase().replace(/[-_]/g, '')
+        
+        if (currentState === 'active') {
+          setTroubleshootingStatus({
+            step: 'success',
+            message: 'Your line is now active and connected!',
+            iccid: iccidDisplay
+          })
+          return
+        }
+        
+        const pendingStates = ['pendingresume', 'pending resume', 'pendingactivation', 'pending activation']
+        const isPending = pendingStates.some(s => currentState.includes(s.replace(/[-_ ]/g, '')))
+        
+        if (isPending) {
+          startExtendedWaitTimer(iccidDisplay)
+        } else {
+          setTroubleshootingStatus({
+            step: 'success',
+            message: 'Resume request completed. Please allow a few minutes for full activation.',
+            iccid: iccidDisplay
+          })
+        }
+      } else {
+        startExtendedWaitTimer(iccidDisplay)
+      }
+    } catch (error) {
+      startExtendedWaitTimer(iccidDisplay)
+    }
+  }
+
+  const startExtendedWaitTimer = (iccidDisplay: string) => {
+    let timeRemaining = 240
+    
+    setTroubleshootingStatus({
+      step: 'extended_wait',
+      message: 'It is taking a little longer than usual. Please wait...',
+      timeRemaining,
+      iccid: iccidDisplay
+    })
+
+    const timer = setInterval(() => {
+      timeRemaining -= 1
+      
+      if (timeRemaining <= 0) {
+        clearInterval(timer)
+        setTroubleshootingTimer(null)
+        setTroubleshootingStatus({
+          step: 'success',
+          message: 'Resume request completed. Your line should be active now. If not, please contact support.',
+          iccid: iccidDisplay
+        })
+      } else {
+        setTroubleshootingStatus(prev => prev ? { ...prev, timeRemaining } : null)
+      }
+    }, 1000)
+
+    setTroubleshootingTimer(timer)
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
   if (isLoading) {
@@ -1221,73 +1337,133 @@ export default function Dashboard() {
                             
                             {troubleshootingSubscription === subscription.id && troubleshootingStatus && (
                               <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                <div className="flex items-start gap-3">
-                                  {troubleshootingStatus.step === 'checking' && (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 animate-pulse">
-                                        <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-blue-800">Checking Line Status</p>
-                                        <p className="text-sm text-blue-700">{troubleshootingStatus.message}</p>
-                                      </div>
-                                    </>
-                                  )}
-                                  {troubleshootingStatus.step === 'resuming' && (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0 animate-pulse">
-                                        <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-yellow-800">Resuming Line</p>
-                                        <p className="text-sm text-yellow-700">{troubleshootingStatus.message}</p>
-                                      </div>
-                                    </>
-                                  )}
-                                  {troubleshootingStatus.step === 'success' && (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-green-800">Success</p>
-                                        <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
-                                      </div>
-                                    </>
-                                  )}
-                                  {troubleshootingStatus.step === 'already_active' && (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-green-800">Line Active</p>
-                                        <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
-                                      </div>
-                                    </>
-                                  )}
-                                  {troubleshootingStatus.step === 'error' && (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
-                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-red-800">Issue Detected</p>
-                                        <p className="text-sm text-red-700">{troubleshootingStatus.message}</p>
-                                      </div>
-                                    </>
+                                <div className="flex flex-col gap-3">
+                                  <div className="flex items-start gap-3">
+                                    {troubleshootingStatus.step === 'resuming' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0 animate-pulse">
+                                          <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          </svg>
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-yellow-800">Resuming Line</p>
+                                          <p className="text-sm text-yellow-700">{troubleshootingStatus.message}</p>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'waiting' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          </svg>
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="font-semibold text-blue-800">Activating Line</p>
+                                          <p className="text-sm text-blue-700">{troubleshootingStatus.message}</p>
+                                          <div className="mt-2 flex items-center gap-2">
+                                            <div className="text-2xl font-bold text-blue-600">{formatTime(troubleshootingStatus.timeRemaining || 0)}</div>
+                                            <span className="text-xs text-blue-600">remaining</span>
+                                          </div>
+                                          <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
+                                            <div 
+                                              className="bg-blue-600 h-2 rounded-full transition-all duration-1000" 
+                                              style={{ width: `${((300 - (troubleshootingStatus.timeRemaining || 0)) / 300) * 100}%` }}
+                                            ></div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'reboot_prompt' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                          </svg>
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="font-semibold text-orange-800">Reboot Your Router</p>
+                                          <p className="text-sm text-orange-700">{troubleshootingStatus.message}</p>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'extended_wait' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          </svg>
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="font-semibold text-purple-800">Taking Longer Than Usual</p>
+                                          <p className="text-sm text-purple-700">{troubleshootingStatus.message}</p>
+                                          <div className="mt-2 flex items-center gap-2">
+                                            <div className="text-2xl font-bold text-purple-600">{formatTime(troubleshootingStatus.timeRemaining || 0)}</div>
+                                            <span className="text-xs text-purple-600">remaining</span>
+                                          </div>
+                                          <div className="mt-2 w-full bg-purple-200 rounded-full h-2">
+                                            <div 
+                                              className="bg-purple-600 h-2 rounded-full transition-all duration-1000" 
+                                              style={{ width: `${((240 - (troubleshootingStatus.timeRemaining || 0)) / 240) * 100}%` }}
+                                            ></div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'success' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-green-800">Success</p>
+                                          <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'already_active' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                          </svg>
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-green-800">Line Active</p>
+                                          <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'error' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-red-800">Issue Detected</p>
+                                          <p className="text-sm text-red-700">{troubleshootingStatus.message}</p>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                  {troubleshootingStatus.step === 'reboot_prompt' && (
+                                    <button
+                                      onClick={() => handleRebootConfirmed(subscription.iccid || subscription.imei || subscription.mdn || '', subscription.iccid ? 'iccid' : subscription.imei ? 'imei' : 'mdn', troubleshootingStatus.iccid || '')}
+                                      className="w-full mt-2 px-4 py-3 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                      </svg>
+                                      I've Rebooted My Router
+                                    </button>
                                   )}
                                 </div>
                               </div>
@@ -1314,73 +1490,133 @@ export default function Dashboard() {
                             
                             {troubleshootingSubscription === subscription.id && troubleshootingStatus && (
                               <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                <div className="flex items-start gap-3">
-                                  {troubleshootingStatus.step === 'checking' && (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 animate-pulse">
-                                        <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-blue-800">Checking Line Status</p>
-                                        <p className="text-sm text-blue-700">{troubleshootingStatus.message}</p>
-                                      </div>
-                                    </>
-                                  )}
-                                  {troubleshootingStatus.step === 'resuming' && (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0 animate-pulse">
-                                        <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-yellow-800">Resuming Line</p>
-                                        <p className="text-sm text-yellow-700">{troubleshootingStatus.message}</p>
-                                      </div>
-                                    </>
-                                  )}
-                                  {troubleshootingStatus.step === 'success' && (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-green-800">Success</p>
-                                        <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
-                                      </div>
-                                    </>
-                                  )}
-                                  {troubleshootingStatus.step === 'already_active' && (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-green-800">Line Active</p>
-                                        <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
-                                      </div>
-                                    </>
-                                  )}
-                                  {troubleshootingStatus.step === 'error' && (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
-                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-red-800">Issue Detected</p>
-                                        <p className="text-sm text-red-700">{troubleshootingStatus.message}</p>
-                                      </div>
-                                    </>
+                                <div className="flex flex-col gap-3">
+                                  <div className="flex items-start gap-3">
+                                    {troubleshootingStatus.step === 'resuming' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0 animate-pulse">
+                                          <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          </svg>
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-yellow-800">Resuming Line</p>
+                                          <p className="text-sm text-yellow-700">{troubleshootingStatus.message}</p>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'waiting' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          </svg>
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="font-semibold text-blue-800">Activating Line</p>
+                                          <p className="text-sm text-blue-700">{troubleshootingStatus.message}</p>
+                                          <div className="mt-2 flex items-center gap-2">
+                                            <div className="text-2xl font-bold text-blue-600">{formatTime(troubleshootingStatus.timeRemaining || 0)}</div>
+                                            <span className="text-xs text-blue-600">remaining</span>
+                                          </div>
+                                          <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
+                                            <div 
+                                              className="bg-blue-600 h-2 rounded-full transition-all duration-1000" 
+                                              style={{ width: `${((300 - (troubleshootingStatus.timeRemaining || 0)) / 300) * 100}%` }}
+                                            ></div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'reboot_prompt' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                          </svg>
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="font-semibold text-orange-800">Reboot Your Router</p>
+                                          <p className="text-sm text-orange-700">{troubleshootingStatus.message}</p>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'extended_wait' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          </svg>
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="font-semibold text-purple-800">Taking Longer Than Usual</p>
+                                          <p className="text-sm text-purple-700">{troubleshootingStatus.message}</p>
+                                          <div className="mt-2 flex items-center gap-2">
+                                            <div className="text-2xl font-bold text-purple-600">{formatTime(troubleshootingStatus.timeRemaining || 0)}</div>
+                                            <span className="text-xs text-purple-600">remaining</span>
+                                          </div>
+                                          <div className="mt-2 w-full bg-purple-200 rounded-full h-2">
+                                            <div 
+                                              className="bg-purple-600 h-2 rounded-full transition-all duration-1000" 
+                                              style={{ width: `${((240 - (troubleshootingStatus.timeRemaining || 0)) / 240) * 100}%` }}
+                                            ></div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'success' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-green-800">Success</p>
+                                          <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'already_active' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                          </svg>
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-green-800">Line Active</p>
+                                          <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
+                                        </div>
+                                      </>
+                                    )}
+                                    {troubleshootingStatus.step === 'error' && (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-red-800">Issue Detected</p>
+                                          <p className="text-sm text-red-700">{troubleshootingStatus.message}</p>
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                  {troubleshootingStatus.step === 'reboot_prompt' && (
+                                    <button
+                                      onClick={() => handleRebootConfirmed(subscription.iccid || subscription.imei || subscription.mdn || '', subscription.iccid ? 'iccid' : subscription.imei ? 'imei' : 'mdn', troubleshootingStatus.iccid || '')}
+                                      className="w-full mt-2 px-4 py-3 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                      </svg>
+                                      I've Rebooted My Router
+                                    </button>
                                   )}
                                 </div>
                               </div>
