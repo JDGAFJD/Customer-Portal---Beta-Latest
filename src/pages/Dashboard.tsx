@@ -159,6 +159,12 @@ export default function Dashboard() {
   const [authToken, setAuthToken] = useState<string | null>(null)
   const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionDetail | null>(null)
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null)
+  const [troubleshootingSubscription, setTroubleshootingSubscription] = useState<string | null>(null)
+  const [troubleshootingStatus, setTroubleshootingStatus] = useState<{
+    step: 'checking' | 'resuming' | 'success' | 'error' | 'already_active'
+    message: string
+    deviceStatus?: ThingspaceDevice
+  } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -396,6 +402,100 @@ export default function Dashboard() {
       alert('Payment collection failed. Please try again.')
     } finally {
       setPaymentLoading(null)
+    }
+  }
+
+  const handleTroubleshooting = async (subscriptionId: string, iccid: string | null, imei: string | null, mdn: string | null) => {
+    if (troubleshootingSubscription === subscriptionId) {
+      setTroubleshootingSubscription(null)
+      setTroubleshootingStatus(null)
+      return
+    }
+
+    setTroubleshootingSubscription(subscriptionId)
+    setTroubleshootingStatus({ step: 'checking', message: 'Checking line status...' })
+
+    const identifier = iccid || imei || mdn
+    const identifierType = iccid ? 'iccid' : imei ? 'imei' : 'mdn'
+
+    if (!identifier) {
+      setTroubleshootingStatus({ step: 'error', message: 'No device identifier found for this subscription.' })
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('auth_token')
+      const statusResponse = await fetch('/api/device/status', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ identifier, identifierType })
+      })
+
+      if (!statusResponse.ok) {
+        setTroubleshootingStatus({ step: 'error', message: 'Unable to retrieve device status.' })
+        return
+      }
+
+      const statusData = await statusResponse.json()
+      const device = statusData.device as ThingspaceDevice
+      const normalizedState = device.state.toLowerCase().replace(/[-_]/g, '')
+
+      if (normalizedState === 'active') {
+        setTroubleshootingStatus({ 
+          step: 'already_active', 
+          message: 'Your line is already active and connected.', 
+          deviceStatus: device 
+        })
+        return
+      }
+
+      const suspendedStates = ['suspend', 'suspended', 'pendingsuspend', 'pending_suspend', 'deactive', 'deactivate']
+      const isSuspended = suspendedStates.some(s => normalizedState.includes(s.replace(/[-_]/g, '')))
+
+      if (isSuspended) {
+        setTroubleshootingStatus({ 
+          step: 'resuming', 
+          message: 'Line is suspended. Attempting to resume...', 
+          deviceStatus: device 
+        })
+
+        const resumeResponse = await fetch('/api/device/resume', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ identifier, identifierType })
+        })
+
+        if (resumeResponse.ok) {
+          await resumeResponse.json()
+          setTroubleshootingStatus({ 
+            step: 'success', 
+            message: 'Resume request submitted successfully. Your line should be active within a few minutes.',
+            deviceStatus: device 
+          })
+        } else {
+          const errorData = await resumeResponse.json()
+          setTroubleshootingStatus({ 
+            step: 'error', 
+            message: errorData.error || 'Failed to resume line. Please contact support.',
+            deviceStatus: device 
+          })
+        }
+      } else {
+        setTroubleshootingStatus({ 
+          step: 'error', 
+          message: `Line status: ${device.state}. Please contact support for assistance.`,
+          deviceStatus: device 
+        })
+      }
+    } catch (error) {
+      console.error('Troubleshooting error:', error)
+      setTroubleshootingStatus({ step: 'error', message: 'An error occurred. Please try again.' })
     }
   }
 
@@ -1126,31 +1226,187 @@ export default function Dashboard() {
                                 {paymentLoading === 'pay' ? 'Loading...' : `Pay Now ${formatCurrency(subscription.totalDues)}`}
                               </button>
                               <button
-                                onClick={() => {/* TODO: Implement troubleshooting */}}
-                                className="px-4 py-3 text-sm font-medium text-primary border-2 border-primary rounded-lg hover:bg-primary hover:text-white transition-colors flex items-center gap-2"
+                                onClick={() => handleTroubleshooting(subscription.id, subscription.iccid, subscription.imei, subscription.mdn)}
+                                className={`px-4 py-3 text-sm font-medium border-2 rounded-lg transition-colors flex items-center gap-2 ${
+                                  troubleshootingSubscription === subscription.id 
+                                    ? 'bg-primary text-white border-primary' 
+                                    : 'text-primary border-primary hover:bg-primary hover:text-white'
+                                }`}
                               >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
-                                Troubleshooting
+                                {troubleshootingSubscription === subscription.id ? 'Close' : 'Troubleshooting'}
                               </button>
                             </div>
+                            
+                            {troubleshootingSubscription === subscription.id && troubleshootingStatus && (
+                              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                  {troubleshootingStatus.step === 'checking' && (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 animate-pulse">
+                                        <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-blue-800">Checking Line Status</p>
+                                        <p className="text-sm text-blue-700">{troubleshootingStatus.message}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                  {troubleshootingStatus.step === 'resuming' && (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0 animate-pulse">
+                                        <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-yellow-800">Resuming Line</p>
+                                        <p className="text-sm text-yellow-700">{troubleshootingStatus.message}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                  {troubleshootingStatus.step === 'success' && (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-green-800">Success</p>
+                                        <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                  {troubleshootingStatus.step === 'already_active' && (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-green-800">Line Active</p>
+                                        <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                  {troubleshootingStatus.step === 'error' && (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-red-800">Issue Detected</p>
+                                        <p className="text-sm text-red-700">{troubleshootingStatus.message}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                         
                         {isActive && isPaid && (
                           <div className="mt-4">
                             <button
-                              onClick={() => {/* TODO: Implement troubleshooting */}}
-                              className="w-full px-4 py-3 text-sm font-medium text-white bg-primary rounded-lg hover:bg-accent transition-colors flex items-center justify-center gap-2"
+                              onClick={() => handleTroubleshooting(subscription.id, subscription.iccid, subscription.imei, subscription.mdn)}
+                              className={`w-full px-4 py-3 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                                troubleshootingSubscription === subscription.id 
+                                  ? 'bg-accent text-white' 
+                                  : 'bg-primary text-white hover:bg-accent'
+                              }`}
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               </svg>
-                              Troubleshooting
+                              {troubleshootingSubscription === subscription.id ? 'Close Troubleshooting' : 'Troubleshooting'}
                             </button>
+                            
+                            {troubleshootingSubscription === subscription.id && troubleshootingStatus && (
+                              <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                  {troubleshootingStatus.step === 'checking' && (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 animate-pulse">
+                                        <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-blue-800">Checking Line Status</p>
+                                        <p className="text-sm text-blue-700">{troubleshootingStatus.message}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                  {troubleshootingStatus.step === 'resuming' && (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center flex-shrink-0 animate-pulse">
+                                        <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-yellow-800">Resuming Line</p>
+                                        <p className="text-sm text-yellow-700">{troubleshootingStatus.message}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                  {troubleshootingStatus.step === 'success' && (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-green-800">Success</p>
+                                        <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                  {troubleshootingStatus.step === 'already_active' && (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-green-800">Line Active</p>
+                                        <p className="text-sm text-green-700">{troubleshootingStatus.message}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                  {troubleshootingStatus.step === 'error' && (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-red-800">Issue Detected</p>
+                                        <p className="text-sm text-red-700">{troubleshootingStatus.message}</p>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                         

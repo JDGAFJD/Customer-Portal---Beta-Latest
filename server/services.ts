@@ -1271,3 +1271,136 @@ export async function collectPaymentForInvoice(invoiceId: string): Promise<{ suc
     return { success: false, error: error.message || 'Payment collection failed' };
   }
 }
+
+export interface ResumeDeviceResult {
+  success: boolean;
+  requestId?: string;
+  error?: string;
+  deviceState?: string;
+}
+
+export async function resumeDevice(identifier: string, identifierType: 'iccid' | 'imei' | 'mdn' = 'iccid'): Promise<ResumeDeviceResult> {
+  if (!THINGSPACE_ACCOUNT_NAME) {
+    return { success: false, error: 'ThingSpace account not configured' };
+  }
+  
+  const tokens = await getThingspaceTokens();
+  if (!tokens) {
+    return { success: false, error: 'Failed to authenticate with ThingSpace' };
+  }
+  
+  try {
+    const response = await fetch('https://thingspace.verizon.com/api/m2m/v1/devices/actions/restore', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${tokens.oauth}`,
+        'VZ-M2M-Token': tokens.session,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        accountName: THINGSPACE_ACCOUNT_NAME,
+        devices: [
+          {
+            deviceIds: [
+              {
+                id: identifier,
+                kind: identifierType
+              }
+            ]
+          }
+        ]
+      })
+    });
+    
+    const responseText = await response.text();
+    console.log('ThingSpace restore response:', response.status, responseText);
+    
+    if (!response.ok) {
+      return { success: false, error: `ThingSpace API error: ${response.status}` };
+    }
+    
+    const data = JSON.parse(responseText);
+    return { 
+      success: true, 
+      requestId: data.requestId,
+      deviceState: 'restore_pending'
+    };
+  } catch (error: any) {
+    console.error('Error resuming device:', error);
+    return { success: false, error: error.message || 'Failed to resume device' };
+  }
+}
+
+export async function getDeviceStatus(identifier: string, identifierType: 'iccid' | 'imei' | 'mdn' = 'iccid'): Promise<ThingspaceDevice | null> {
+  if (!THINGSPACE_ACCOUNT_NAME) return null;
+  
+  const tokens = await getThingspaceTokens();
+  if (!tokens) return null;
+  
+  try {
+    const response = await fetch('https://thingspace.verizon.com/api/m2m/v1/devices/actions/list', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${tokens.oauth}`,
+        'VZ-M2M-Token': tokens.session,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        accountName: THINGSPACE_ACCOUNT_NAME,
+        filter: {
+          deviceIdentifierFilters: [
+            { kind: identifierType, contains: identifier }
+          ]
+        }
+      })
+    });
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json() as any;
+    const devices = data.devices || [];
+    
+    if (!devices.length) return null;
+    
+    const device = devices[0];
+    
+    const getDeviceId = (kind: string) => {
+      const found = device.deviceIds?.find((id: any) => 
+        id.kind.toLowerCase() === kind.toLowerCase()
+      );
+      return found?.id || null;
+    };
+    
+    const extendedAttrs: Record<string, string> = {};
+    for (const attr of device.extendedAttributes || []) {
+      extendedAttrs[attr.key] = attr.value;
+    }
+    
+    return {
+      accountName: device.accountName,
+      state: device.state || 'unknown',
+      connected: device.connected || false,
+      ipAddress: device.ipAddress || null,
+      lastConnectionDate: device.lastConnectionDate || null,
+      lastActivationDate: device.lastActivationDate || null,
+      billingCycleEndDate: device.billingCycleEndDate || null,
+      identifiers: {
+        mdn: getDeviceId('mdn'),
+        imsi: getDeviceId('imsi'),
+        imei: getDeviceId('imei'),
+        iccid: getDeviceId('iccid'),
+        msisdn: getDeviceId('msisdn'),
+        min: getDeviceId('min'),
+      },
+      carrier: device.carrierInformations?.[0] ? {
+        name: device.carrierInformations[0].carrierName || '',
+        servicePlan: device.carrierInformations[0].servicePlan || '',
+        state: device.carrierInformations[0].state || '',
+      } : null,
+      extendedAttributes: extendedAttrs,
+    };
+  } catch (error) {
+    console.error('Error getting device status:', error);
+    return null;
+  }
+}

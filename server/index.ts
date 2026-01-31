@@ -1027,6 +1027,118 @@ app.post("/api/billing/collect-payment", async (req, res) => {
   }
 });
 
+app.post("/api/device/resume", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let customerEmail: string | null = null;
+    let isTestToken = false;
+
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET!);
+      if (decoded.isTest) {
+        isTestToken = true;
+        customerEmail = decoded.email;
+      }
+    } catch (e) {}
+
+    if (!isTestToken) {
+      const session = await storage.getSessionByToken(token);
+      if (!session) {
+        return res.status(401).json({ error: "Invalid session" });
+      }
+      const customer = await storage.getCustomer(session.customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      customerEmail = customer.email;
+    }
+
+    if (!customerEmail) {
+      return res.status(401).json({ error: "Could not determine customer" });
+    }
+
+    const { identifier, identifierType = 'iccid' } = req.body;
+    if (!identifier) {
+      return res.status(400).json({ error: "Device identifier is required" });
+    }
+
+    const { resumeDevice } = await import('./services');
+    const result = await resumeDevice(identifier, identifierType);
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.error || "Failed to resume device" });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Device resume request submitted",
+      requestId: result.requestId 
+    });
+  } catch (error: any) {
+    console.error("Resume device error:", error);
+    res.status(500).json({ error: error.message || "Failed to resume device" });
+  }
+});
+
+app.post("/api/device/status", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let customerEmail: string | null = null;
+    let isTestToken = false;
+
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET!);
+      if (decoded.isTest) {
+        isTestToken = true;
+        customerEmail = decoded.email;
+      }
+    } catch (e) {}
+
+    if (!isTestToken) {
+      const session = await storage.getSessionByToken(token);
+      if (!session) {
+        return res.status(401).json({ error: "Invalid session" });
+      }
+      const customer = await storage.getCustomer(session.customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      customerEmail = customer.email;
+    }
+
+    if (!customerEmail) {
+      return res.status(401).json({ error: "Could not determine customer" });
+    }
+
+    const { identifier, identifierType = 'iccid' } = req.body;
+    if (!identifier) {
+      return res.status(400).json({ error: "Device identifier is required" });
+    }
+
+    const { getDeviceStatus } = await import('./services');
+    const device = await getDeviceStatus(identifier, identifierType);
+
+    if (!device) {
+      return res.status(404).json({ error: "Device not found" });
+    }
+
+    res.json({ success: true, device });
+  } catch (error: any) {
+    console.error("Device status error:", error);
+    res.status(500).json({ error: error.message || "Failed to get device status" });
+  }
+});
+
 if (process.env.NODE_ENV === "production") {
   const distPath = path.join(__dirname, "..", "dist");
   app.use(express.static(distPath));
