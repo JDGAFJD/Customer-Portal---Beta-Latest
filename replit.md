@@ -182,3 +182,12 @@ npm run db:push  # Push database schema
   - Direct "Pay" button on individual invoices in both Invoices tab and subscription detail modal
   - Pay All Due button in Invoices tab header for bulk payment
   - API endpoints: /api/billing/collect-now-url, /api/billing/update-payment-method-url, /api/billing/collect-payment
+- Jan 31, 2026: Internet Tab Redesign with Line Status Indicators
+  - Redesigned Internet tab to show subscription-based cards instead of device-centric view
+  - Each subscription displays: status (Active/Inactive), payment status (Paid/Unpaid), plan name, IMEI, ICCID
+  - ThingSpace line status section with visual indicators below each subscription:
+    - Green (connected WiFi icon): Active line status
+    - Yellow (clock icon): Pending resume, pending account update
+    - Red (disconnected icon): Deactive, suspend, pending suspend, or no response
+  - Normalized status matching handles variations (underscores, dashes, case-insensitive)
+  - Device lookup uses ICCID, IMEI, or MDN fallback for robust matching
