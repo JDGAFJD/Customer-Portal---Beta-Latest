@@ -981,7 +981,7 @@ export default function Dashboard() {
                     if (isPaid || !subscription.dueSince) {
                       return { inGracePeriod: false, daysRemaining: 0, daysOverdue: 0 }
                     }
-                    const dueSinceDate = new Date(parseInt(subscription.dueSince) * 1000)
+                    const dueSinceDate = new Date(subscription.dueSince)
                     const now = new Date()
                     const daysSinceDue = Math.floor((now.getTime() - dueSinceDate.getTime()) / (1000 * 60 * 60 * 24))
                     const gracePeriodDays = 3
