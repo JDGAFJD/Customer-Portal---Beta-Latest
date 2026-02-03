@@ -45,6 +45,7 @@ src/
 │   ├── Dashboard.tsx     # Main dashboard (5 tabs: Overview, Subscriptions, Orders, Invoices, Internet)
 │   ├── AccountSettings.tsx # Update name, password, phone
 │   ├── ActivityLog.tsx   # Login history and activity
+│   ├── Troubleshoot.tsx  # Dedicated line restoration troubleshooting page
 │   └── TestLogin.tsx     # Test portal at /testing6699452
 ├── App.tsx               # Router configuration
 ├── main.tsx              # App entry point
@@ -210,3 +211,11 @@ npm run db:push  # Push database schema
   - Backend verifies device ownership before allowing plan changes
   - Current plan derived from ThingSpace API (not client-supplied) for security
   - API endpoints: GET /api/device/plans, POST /api/device/change-plan
+- Feb 3, 2026: Dedicated Troubleshooting Page
+  - New /troubleshoot page with automatic line status check on load
+  - Suspended line handling: auto-restore via ThingSpace API + 2-minute timer with progress UI
+  - Status recheck after 2 minutes: ACTIVE shows reboot instructions, PENDING_RESUME triggers 1-minute extended timer
+  - Escalation message with support contact if line still not active after extended timer
+  - Troubleshoot button in Internet tab navigates to /troubleshoot with subscription context (ICCID, IMEI, MDN)
+  - Supports fallback identifiers: uses ICCID first, then IMEI, then MDN
+  - Normalized status handling from both device.carrier.state and device.state

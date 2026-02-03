@@ -20,6 +20,11 @@ export default function Troubleshoot() {
   
   const subscriptionId = searchParams.get('subscription');
   const iccid = searchParams.get('iccid');
+  const imei = searchParams.get('imei');
+  const mdn = searchParams.get('mdn');
+  
+  const identifier = iccid || imei || mdn;
+  const identifierType: 'iccid' | 'imei' | 'mdn' = iccid ? 'iccid' : imei ? 'imei' : 'mdn';
   
   const [step, setStep] = useState<TroubleshootStep>('checking');
   const [lineStatus, setLineStatus] = useState<string | null>(null);
@@ -32,11 +37,11 @@ export default function Troubleshoot() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getToken = () => localStorage.getItem('token');
+  const getToken = () => localStorage.getItem('auth_token');
 
   const checkLineStatus = useCallback(async (): Promise<string | null> => {
     const token = getToken();
-    if (!token || !iccid) return null;
+    if (!token || !identifier) return null;
 
     try {
       const response = await fetch('/api/device/status', {
@@ -46,8 +51,8 @@ export default function Troubleshoot() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          identifier: iccid,
-          identifierType: 'iccid'
+          identifier,
+          identifierType
         })
       });
 
@@ -56,18 +61,18 @@ export default function Troubleshoot() {
       }
 
       const data = await response.json();
-      const status = data.device?.carrier?.state?.toLowerCase() || null;
+      const status = (data.device?.carrier?.state || data.device?.state || '').toLowerCase() || null;
       setLineStatus(status);
       return status;
     } catch (err: any) {
       console.error('Status check error:', err);
       return null;
     }
-  }, [iccid]);
+  }, [identifier, identifierType]);
 
   const resumeLine = async (): Promise<boolean> => {
     const token = getToken();
-    if (!token || !iccid) return false;
+    if (!token || !identifier) return false;
 
     try {
       const response = await fetch('/api/device/resume', {
@@ -77,8 +82,8 @@ export default function Troubleshoot() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          identifier: iccid,
-          identifierType: 'iccid'
+          identifier,
+          identifierType
         })
       });
 
@@ -137,7 +142,7 @@ export default function Troubleshoot() {
   }, [checkLineStatus]);
 
   useEffect(() => {
-    if (!iccid) {
+    if (!identifier) {
       setError('Missing device information');
       setStep('error');
       return;
@@ -178,7 +183,7 @@ export default function Troubleshoot() {
     };
 
     init();
-  }, [iccid, checkLineStatus, handleFirstRecheck, handleExtendedRecheck]);
+  }, [identifier, checkLineStatus, handleFirstRecheck, handleExtendedRecheck]);
 
   const progressPercentage = step === 'waiting_first' 
     ? ((120 - timeRemaining) / 120) * 100
