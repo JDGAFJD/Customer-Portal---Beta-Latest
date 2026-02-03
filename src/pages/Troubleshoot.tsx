@@ -12,9 +12,18 @@ type TroubleshootStep =
   | 'rechecking_extended'
   | 'success'
   | 'escalated'
+  | 'escalation_pending'
+  | 'escalation_submitted'
   | 'no_line'
   | 'no_line_submitted'
   | 'error';
+
+interface EscalationInfo {
+  hasRecentEscalation: boolean;
+  ticketId?: string;
+  hoursRemaining?: number;
+  canEscalateAgain?: boolean;
+}
 
 export default function Troubleshoot() {
   const navigate = useNavigate();
@@ -36,6 +45,8 @@ export default function Troubleshoot() {
   const [alternateEmail, setAlternateEmail] = useState<string>('');
   const [subscriptionData, setSubscriptionData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [escalationInfo, setEscalationInfo] = useState<EscalationInfo | null>(null);
+  const [escalationTicketId, setEscalationTicketId] = useState<string>('');
   
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasInitialized = useRef(false);
@@ -155,6 +166,87 @@ export default function Troubleshoot() {
     } catch (err) {
       console.error('Activate line error:', err);
       setError('Failed to submit your request. Please try again.');
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const checkEscalationStatus = async () => {
+    const token = getToken();
+    if (!token) return null;
+
+    try {
+      const response = await fetch('/api/escalation/check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subscriptionId: subscriptionId || '',
+          iccid: iccid || ''
+        })
+      });
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      setEscalationInfo(data);
+      return data as EscalationInfo;
+    } catch (err) {
+      console.error('Check escalation error:', err);
+      return null;
+    }
+  };
+
+  const createEscalation = async () => {
+    const token = getToken();
+    if (!token) return false;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/escalation/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subscriptionId: subscriptionId || '',
+          iccid: iccid || '',
+          imei: imei || '',
+          issueType: 'line_restoration',
+          notificationEmail: alternateEmail || undefined
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.ticketId) {
+          setEscalationTicketId(errorData.ticketId);
+          setEscalationInfo({
+            hasRecentEscalation: true,
+            ticketId: errorData.ticketId,
+            hoursRemaining: errorData.hoursRemaining,
+            canEscalateAgain: false
+          });
+          setStep('escalation_pending');
+        } else {
+          setError(errorData.error || 'Failed to create escalation ticket');
+        }
+        return false;
+      }
+
+      const result = await response.json();
+      setEscalationTicketId(result.ticketId);
+      setStep('escalation_submitted');
+      return true;
+    } catch (err) {
+      console.error('Create escalation error:', err);
+      setError('Failed to submit escalation. Please try again.');
       return false;
     } finally {
       setIsSubmitting(false);
@@ -539,7 +631,7 @@ export default function Troubleshoot() {
               <p className="text-lg font-medium" style={{ color: '#0f172a' }}>Support Needed</p>
               <p className="text-gray-500 mt-2 mb-6">
                 We're still working on restoring your line, but it's taking longer than expected.<br/>
-                Our support team has been notified and will assist you further.
+                Would you like to escalate this issue to our support team?
               </p>
 
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -547,6 +639,10 @@ export default function Troubleshoot() {
                   Current line status: <span className="font-medium">{lineStatus || 'Unknown'}</span>
                 </p>
               </div>
+
+              {error && (
+                <p className="text-red-500 text-sm mb-4">{error}</p>
+              )}
 
               <div className="flex gap-3 justify-center">
                 <button
@@ -556,10 +652,68 @@ export default function Troubleshoot() {
                 >
                   Back to Dashboard
                 </button>
+                <button
+                  onClick={async () => {
+                    const status = await checkEscalationStatus();
+                    if (status?.hasRecentEscalation && !status.canEscalateAgain) {
+                      setEscalationTicketId(status.ticketId || '');
+                      setStep('escalation_pending');
+                    } else {
+                      createEscalation();
+                    }
+                  }}
+                  disabled={isSubmitting}
+                  className="px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg disabled:opacity-50"
+                  style={{ backgroundColor: '#10a37f' }}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Escalate Issue'}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'escalation_pending' && (
+            <motion.div
+              key="escalation_pending"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-8"
+            >
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10a37f20' }}>
+                <svg className="w-8 h-8" style={{ color: '#10a37f' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-lg font-medium" style={{ color: '#0f172a' }}>Issue Already Escalated</p>
+              <p className="text-gray-500 mt-2 mb-6">
+                Your issue is being worked on. We apologize for the delay, but this will be sorted out within the next 24 hours.<br/>
+                We will notify you via email once resolved.
+              </p>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-green-700">
+                  Ticket ID: <span className="font-medium font-mono">{escalationTicketId || escalationInfo?.ticketId}</span>
+                </p>
+                {escalationInfo?.hoursRemaining && escalationInfo.hoursRemaining > 0 && (
+                  <p className="text-sm text-green-600 mt-1">
+                    You can escalate again in {escalationInfo.hoursRemaining} hour{escalationInfo.hoursRemaining !== 1 ? 's' : ''} if needed.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg"
+                  style={{ backgroundColor: '#10a37f' }}
+                >
+                  Back to Dashboard
+                </button>
                 <a
                   href="tel:+18447677770"
-                  className="px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg flex items-center gap-2"
-                  style={{ backgroundColor: '#10a37f' }}
+                  className="px-6 py-3 rounded-lg font-medium transition-all border border-gray-300 hover:bg-gray-50 flex items-center gap-2"
+                  style={{ color: '#0f172a' }}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -567,6 +721,44 @@ export default function Troubleshoot() {
                   Call Support
                 </a>
               </div>
+            </motion.div>
+          )}
+
+          {step === 'escalation_submitted' && (
+            <motion.div
+              key="escalation_submitted"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-8"
+            >
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10a37f20' }}>
+                <svg className="w-8 h-8" style={{ color: '#10a37f' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-lg font-medium" style={{ color: '#0f172a' }}>Escalation Submitted</p>
+              <p className="text-gray-500 mt-2 mb-6">
+                Your issue has been escalated to our support team. We apologize for the inconvenience.<br/>
+                This will be sorted out within the next 24 hours and we will notify you via email.
+              </p>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-green-700">
+                  Ticket ID: <span className="font-medium font-mono">{escalationTicketId}</span>
+                </p>
+                <p className="text-sm text-green-600 mt-1">
+                  Please save this ticket ID for your reference.
+                </p>
+              </div>
+
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg"
+                style={{ backgroundColor: '#10a37f' }}
+              >
+                Back to Dashboard
+              </button>
             </motion.div>
           )}
 

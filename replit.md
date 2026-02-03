@@ -223,3 +223,10 @@ npm run db:push  # Push database schema
   - Customer can optionally enter alternate email for notifications
   - Sends activation request to external webhook (app.lrlos.com) with full customer context
   - API endpoint: POST /api/device/activate-line
+  - Escalation tracking with 24-hour cooldown:
+    - Database table `escalation_tickets` stores ticket ID, customer email, subscription, issue type
+    - "Escalate Issue" button checks for existing open tickets within 24 hours
+    - If ticket exists < 24 hours: Shows "Issue Already Escalated" with ticket ID and remaining hours
+    - If no ticket or > 24 hours: Creates new escalation ticket with unique ID (ESC-xxx-xxxx format)
+    - Customer notified via email when issue is resolved
+    - API endpoints: POST /api/escalation/check, POST /api/escalation/create

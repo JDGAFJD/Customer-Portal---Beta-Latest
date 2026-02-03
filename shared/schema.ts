@@ -22,8 +22,8 @@ export const otpCodes = pgTable("otp_codes", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").references(() => customers.id),
   code: varchar("code", { length: 6 }).notNull(),
-  type: varchar("type", { length: 20 }).notNull(), // 'phone' or 'email'
-  target: varchar("target", { length: 255 }).notNull(), // phone number or email
+  type: varchar("type", { length: 20 }).notNull(),
+  target: varchar("target", { length: 255 }).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   verified: boolean("verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -37,6 +37,21 @@ export const sessions = pgTable("sessions", {
   createdAt: timestamp("created_at").defaultNow(),
   userAgent: text("user_agent"),
   ipAddress: varchar("ip_address", { length: 45 }),
+});
+
+export const escalationTickets = pgTable("escalation_tickets", {
+  id: serial("id").primaryKey(),
+  ticketId: varchar("ticket_id", { length: 50 }).notNull().unique(),
+  customerId: integer("customer_id").references(() => customers.id),
+  customerEmail: varchar("customer_email", { length: 255 }).notNull(),
+  subscriptionId: varchar("subscription_id", { length: 255 }),
+  iccid: varchar("iccid", { length: 50 }),
+  imei: varchar("imei", { length: 50 }),
+  issueType: varchar("issue_type", { length: 50 }).notNull(),
+  status: varchar("status", { length: 20 }).default("open"),
+  createdAt: timestamp("created_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+  notificationEmail: varchar("notification_email", { length: 255 }),
 });
 
 export const customersRelations = relations(customers, ({ many }) => ({
@@ -64,6 +79,8 @@ export type OtpCode = typeof otpCodes.$inferSelect;
 export type InsertOtpCode = typeof otpCodes.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type InsertSession = typeof sessions.$inferInsert;
+export type EscalationTicket = typeof escalationTickets.$inferSelect;
+export type InsertEscalationTicket = typeof escalationTickets.$inferInsert;
 
 export const insertCustomerSchema = createInsertSchema(customers);
 export const insertOtpCodeSchema = createInsertSchema(otpCodes);

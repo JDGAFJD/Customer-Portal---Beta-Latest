@@ -1237,6 +1237,156 @@ app.post("/api/device/activate-line", async (req, res) => {
   }
 });
 
+app.post("/api/escalation/check", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let customerEmail: string | null = null;
+    let isTestToken = false;
+
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET!);
+      if (decoded.isTest) {
+        isTestToken = true;
+        customerEmail = decoded.email;
+      }
+    } catch (e) {}
+
+    if (!isTestToken) {
+      const session = await storage.getSessionByToken(token);
+      if (!session) {
+        return res.status(401).json({ error: "Invalid session" });
+      }
+      const customer = await storage.getCustomer(session.customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      customerEmail = customer.email;
+    }
+
+    if (!customerEmail) {
+      return res.status(401).json({ error: "Could not determine customer" });
+    }
+
+    const { subscriptionId, iccid } = req.body;
+
+    const existingTicket = await storage.getRecentEscalation(
+      customerEmail,
+      subscriptionId || null,
+      iccid || null
+    );
+
+    if (existingTicket) {
+      const createdAt = new Date(existingTicket.createdAt!);
+      const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+      
+      res.json({
+        hasRecentEscalation: true,
+        ticketId: existingTicket.ticketId,
+        createdAt: existingTicket.createdAt,
+        hoursRemaining: Math.max(0, Math.ceil(24 - hoursSinceCreation)),
+        canEscalateAgain: hoursSinceCreation >= 24
+      });
+    } else {
+      res.json({
+        hasRecentEscalation: false,
+        canEscalateAgain: true
+      });
+    }
+  } catch (error: any) {
+    console.error("Check escalation error:", error);
+    res.status(500).json({ error: error.message || "Failed to check escalation status" });
+  }
+});
+
+app.post("/api/escalation/create", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let customerEmail: string | null = null;
+    let customerId: number | null = null;
+    let isTestToken = false;
+
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET!);
+      if (decoded.isTest) {
+        isTestToken = true;
+        customerEmail = decoded.email;
+      }
+    } catch (e) {}
+
+    if (!isTestToken) {
+      const session = await storage.getSessionByToken(token);
+      if (!session) {
+        return res.status(401).json({ error: "Invalid session" });
+      }
+      const customer = await storage.getCustomer(session.customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      customerEmail = customer.email;
+      customerId = customer.id;
+    }
+
+    if (!customerEmail) {
+      return res.status(401).json({ error: "Could not determine customer" });
+    }
+
+    const { subscriptionId, iccid, imei, issueType, notificationEmail } = req.body;
+
+    const existingTicket = await storage.getRecentEscalation(
+      customerEmail,
+      subscriptionId || null,
+      iccid || null
+    );
+
+    if (existingTicket) {
+      const createdAt = new Date(existingTicket.createdAt!);
+      const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursSinceCreation < 24) {
+        return res.status(400).json({
+          error: "An escalation ticket already exists for this issue",
+          ticketId: existingTicket.ticketId,
+          hoursRemaining: Math.ceil(24 - hoursSinceCreation)
+        });
+      }
+    }
+
+    const ticketId = `ESC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+    const ticket = await storage.createEscalationTicket({
+      ticketId,
+      customerId: customerId,
+      customerEmail: customerEmail.toLowerCase(),
+      subscriptionId: subscriptionId || null,
+      iccid: iccid || null,
+      imei: imei || null,
+      issueType: issueType || "line_restoration",
+      notificationEmail: notificationEmail || null
+    });
+
+    console.log("Escalation ticket created:", ticketId);
+
+    res.json({
+      success: true,
+      ticketId: ticket.ticketId,
+      message: "Escalation ticket created successfully"
+    });
+  } catch (error: any) {
+    console.error("Create escalation error:", error);
+    res.status(500).json({ error: error.message || "Failed to create escalation ticket" });
+  }
+});
+
 app.get("/api/device/plans", async (req, res) => {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");

@@ -1,6 +1,6 @@
-import { customers, otpCodes, sessions, type Customer, type InsertCustomer, type OtpCode, type InsertOtpCode, type Session, type InsertSession } from "../shared/schema";
+import { customers, otpCodes, sessions, escalationTickets, type Customer, type InsertCustomer, type OtpCode, type InsertOtpCode, type Session, type InsertSession, type EscalationTicket, type InsertEscalationTicket } from "../shared/schema";
 import { db } from "./db";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, or } from "drizzle-orm";
 
 export interface IStorage {
   getCustomer(id: number): Promise<Customer | undefined>;
@@ -19,6 +19,10 @@ export interface IStorage {
   createSession(session: InsertSession): Promise<Session>;
   getSessionByToken(token: string): Promise<Session | undefined>;
   deleteSession(token: string): Promise<void>;
+
+  createEscalationTicket(ticket: InsertEscalationTicket): Promise<EscalationTicket>;
+  getRecentEscalation(customerEmail: string, subscriptionId: string | null, iccid: string | null): Promise<EscalationTicket | undefined>;
+  getEscalationByTicketId(ticketId: string): Promise<EscalationTicket | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -120,6 +124,44 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSession(token: string): Promise<void> {
     await db.delete(sessions).where(eq(sessions.token, token));
+  }
+
+  async createEscalationTicket(ticket: InsertEscalationTicket): Promise<EscalationTicket> {
+    const [newTicket] = await db.insert(escalationTickets).values(ticket).returning();
+    return newTicket;
+  }
+
+  async getRecentEscalation(customerEmail: string, subscriptionId: string | null, iccid: string | null): Promise<EscalationTicket | undefined> {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const conditions = [
+      eq(escalationTickets.customerEmail, customerEmail.toLowerCase()),
+      eq(escalationTickets.status, "open"),
+      gt(escalationTickets.createdAt, twentyFourHoursAgo)
+    ];
+
+    if (subscriptionId) {
+      conditions.push(eq(escalationTickets.subscriptionId, subscriptionId));
+    }
+
+    if (iccid) {
+      conditions.push(eq(escalationTickets.iccid, iccid));
+    }
+
+    const [ticket] = await db
+      .select()
+      .from(escalationTickets)
+      .where(and(...conditions));
+    
+    return ticket || undefined;
+  }
+
+  async getEscalationByTicketId(ticketId: string): Promise<EscalationTicket | undefined> {
+    const [ticket] = await db
+      .select()
+      .from(escalationTickets)
+      .where(eq(escalationTickets.ticketId, ticketId));
+    return ticket || undefined;
   }
 }
 
