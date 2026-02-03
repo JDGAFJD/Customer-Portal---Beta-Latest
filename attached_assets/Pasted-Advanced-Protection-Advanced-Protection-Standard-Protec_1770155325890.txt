@@ -1,0 +1,131 @@
+Advanced-Protection	Advanced Protection
+Standard-Protection	Standard Protection
+Truck-Freedom	Truck Freedom
+Late-Fee	Late Fee
+Everywhere-Unlimited-Travel	Everywhere Unlimited Travel
+Everywhere-Unlimited-Residential	Everywhere Unlimited Residential
+Redemption-Fee-Test	Nomad Redemption Fee
+Nomad-Dragon-0	Nomad Dragon 0
+Modem-Return	Modem Return
+Nomad-Unlimited-Lite-Plan-OLD	Nomad Unlimited Lite Plan OLD
+Nomad-Internet-Unlimited-5G-PLUS-Plan-149	Nomad Internet Unlimited 5G PLUS Plan 149
+Nomad-Unlimited-Power-Plan-9995	Nomad Unlimited Power Plan 99.95
+Sim-Card-Activation-Kit-Annual	Sim Card & Activation Kit Annual
+Standard-Nomad-Modem-Kit	Standard Nomad Modem Kit - One time
+Nomad-Unlimited-Travel-Plan-Annual-Flash-sales	Nomad Unlimited Travel Plan Annual Flash sales
+Nomad-Unlimited-Residential-Plan-Annual-Flash-sales	Nomad Unlimited Residential Plan Annual Flash sales
+Nomad-Unlimited-Lite-Plan-Annual	Nomad Unlimited Lite Plan Annual Flash sales
+Updated-Nomad-Prime-1995	Nomad Prime 19.95
+Updated-Nomad-Travel-1995	Nomad Travel $19.95
+Nomad-One-Time-Modem-Fee	Nomad One Time Modem Fee
+Nomad-Wholesaler-Modem-Rental	Nomad Wholesaler Modem Rental
+Nomad-Redemption-Fee---One-Time	Nomad Redemption Fee - One Time
+Nomad-Unlimited-Residential-PLANS	Nomad Unlimited Residential PLANS
+Nomad-Residential-5G-Yearly-850	Nomad Residential 5G Yearly 850
+Nomad-Internet-Unlimited-5G-PLUS-Plan	Nomad Internet Unlimited 5G PLUS Plan 99
+Nomad-Residential-4G-Yearly	Nomad Residential 4G Yearly
+Nomad-Unlimited-Travel-119	Nomad Unlimited Travel 119
+Nomad-Internet-Travel-Yearly-828	Nomad Internet Travel Yearly $828
+Nomad-Unlimited-Base-Residential	Nomad Unlimited Base Residential
+Verizon-Red-Dragon-TBYB	Verizon Red Dragon TBYB
+Influencer-Kit-Program	Influencer Kit Program
+Nomad-Travel-Yearly-900	Nomad Travel Yearly 900
+Nomad-Residential-5G-Yearly-708	Nomad Residential 5G Yearly 708
+Nomad-Business-Internet-200-Annual	Nomad Business Internet 200 Annual
+Nomad-Annual-Rural-5G	Nomad Annual Rural 5G
+Unlimited-Fixed-Wireless-Access-Business-Internet-200Mbps	Unlimited Fixed Wireless Access Business Internet: 200Mbps
+Unlimited-Fixed-Wireless-Access-Business-Internet-100Mbps-Plan	Unlimited Fixed Wireless Access Business Internet: 100Mbps Plan
+Nomad-Residential-5G	Nomad Residential 5G
+Nomad-Residential-4G-Plan	Nomad Residential 4G Plan
+Nomad-Unlimited-Ultra-Raptor-Plan	Nomad Unlimited Ultra Raptor Plan
+Nomad-Cube-Plan	Nomad Cube Plan
+Nomad-Prime-Founders-Plan	Nomad Prime Founders Plan
+Nomad-Internet-Unlimited-5G-PRIME-Plan	Nomad Internet Unlimited 5G PRIME Plan
+Nomad-300GB-Rural-Plan	Nomad 300GB Rural Plan
+Nomad-Residential	Nomad Residential
+Nomad-Business	Nomad Business
+Deep-Red-Plan	Deep Red Plan
+Bring-Your-Own-Device	Bring Your Own Device
+Nomad-SIM-Only-Unlimited-100-Mbps	Nomad SIM Only Unlimited 100 Mbps
+Nomad-Rural-Unlimited-Ultra-200-Mbps-Oasis	Nomad Rural Unlimited Ultra 200 Mbps Oasis
+Nomad-Rural-Unlimited-100-Mbps-Oasis	Nomad Rural Unlimited 100 Mbps Oasis
+Nomad-Unlimited-Power-Plan	Nomad Unlimited Power Plan 149.95
+Nomad-Power-Plan-Promotional-First-Month	Nomad Power Plan Promotional First Month
+Nomad-Modem-Replacement-Fee	Nomad Modem Replacement Fee
+Oasis-&-Prime-yearly-9.99	Oasis & Prime yearly $9.99
+Oasis-monthly-19.95	Oasis monthly $19.95
+Nomad-Travel-Upgrade-10.00	Nomad Travel Upgrade $10.00
+Nomad-Dragon-One-Time-Premier-0.00	Nomad Dragon One Time Premier $0.00
+Nomad-Dragon-One-Time-Basic-0.00	Nomad Dragon One Time Basic $0.00
+Nomad-Air-One-Time-Premier-0.00	Nomad Air One Time Premier $0.00
+Nomad-Air-One-Time-Basic-0.00	Nomad Air One Time Basic $0.00
+Nomad-Home-One-Time-Premier-0.00	Nomad Home One Time Premier $0.00
+Nomad-Home-One-Time-Basic-0.00	Nomad Home One Time Basic $0.00
+Dragon-XC46BE-100.00	Dragon XC46BE $100.00
+Nomad-Stripe-Modem-Rental-0.00	Nomad Stripe Modem Rental $0.00
+Nomad-Dragon-Modem-Basic-Rental-10.00	Nomad Dragon Modem Basic Rental $10.00
+Nomad-Modem-Rental-0.00	Nomad Modem Rental $0.00
+Nomad-Raptor-Modem-Basic-Rental-0.00	Nomad Raptor Modem Basic Rental $0.00
+Nomad-Air-Modem-Premier-Rental-20.00	Nomad Air Modem Premier Rental $20.00
+Nomad-Air-Modem-Basic-Rental-10.00	Nomad Air Modem Basic Rental $10.00
+Nomad-Home-Modem-Premier-Rental-15.00	Nomad Home Modem Premier Rental $15.00
+Nomad-Home-Modem-Basic-Rental-5.00	Nomad Home Modem Basic Rental $5.00
+Nomad-Raptor-Modem-Premier-Rental-25.00	Nomad Raptor Modem Premier Rental $25.00
+Nomad-Raptor-Modem-Basic-Rental-10.00	Nomad Raptor Modem Basic Rental $10.00
+Nomad-Air-Modem-Premier-Rental-15.00	Nomad Air Modem Premier Rental $15.00
+Nomad-Air-Modem-Basic-Rental-0.50	Nomad Air Modem Basic Rental $0.50
+Nomad-Business-Modem-Rental-with-Nomad-Premier-25.00	Nomad Business Modem Rental with Nomad Premier $25.00
+Nomad-Business-Modem-Rental-15.00	Nomad Business Modem Rental $15.00
+Nomad-Travel-Modem-Rental-with-Nomad-Premier-25.00	Nomad Travel Modem Rental with Nomad Premier $25.00
+Nomad-Travel-Modem-Rental-15.00	Nomad Travel Modem Rental $15.00
+Nomad-Home-Modem-Rental-with-Nomad-Premier-25.00	Nomad Home Modem Rental with Nomad Premier $25.00
+Nomad-Home-Modem-Rental-15.00	Nomad Home Modem Rental $15.00
+FlexPay-Raptor-Monthly-Price-0.00	FlexPay Raptor Monthly Price $0.00
+FlexPay-Air-Monthly-Price-0.00	FlexPay Air Monthly Price $0.00
+FlexPay-Omen-Monthly-Price-0.00	FlexPay Omen Monthly Price $0.00
+FlexPay-Raptor-Monthly-Price-25.00	FlexPay Raptor Monthly Price $25.00
+FlexPay-Air-Monthly-Price-20.00	FlexPay Air Monthly Price $20.00
+FlexPay-Omen-Monthly-Price-15.00	FlexPay Omen Monthly Price $15.00
+Nomad-Prime-Upgrade-10.00	Nomad Prime Upgrade $10.00
+Nomad-Home-Modem-Premier-Rental-10.00	Nomad Home Modem Premier Rental $10.00
+Nomad-Home-Modem-Basic-Rental-0.50	Nomad Home Modem Basic Rental $0.50
+Nomad-Oasis-Upgrade-Upfront-Paid	Nomad Oasis Upgrade Upfront Paid
+Nomad-Rural-Power-Plan-checkout-Upfront	Nomad Rural Power Plan checkout Upfront
+Nomad-Rural-Unlimited-200-Mbps-9995-Upfront	Nomad Rural Unlimited 200 Mbps $99.95 Upfront
+Nomad-Rural-Unlimited-100-Mbps-9995-Upfront	Nomad Rural Unlimited 100 Mbps $99.95 Upfront
+Nomad-Travel-1995	Nomad Travel $9.95
+Nomad-Prime-10	Nomad Prime $10
+Nomad-Rural-Unlimited-Ultra-200-Mbps-16995	Nomad Rural Unlimited Ultra 200 Mbps $169.95
+Nomad-Rural-Unlimited-Ultra-200-Mbps-12995	Nomad Rural Unlimited Ultra 200 Mbps $129.95
+Nomad-Rural-Unlimited-Ultra-200-Mbps-14995	Nomad Rural Unlimited Ultra 200 Mbps $149.95
+Nomad-Rural-Unlimited-100-MBPS-11995	Nomad Rural Unlimited 100 MBPS $119.95
+Nomad-Rural-Unlimited-100-Mbps-9995	Nomad Rural Unlimited 100 Mbps $99.95
+Nomad-Unlimited-Lite-Plan-Paid-Upfront	Nomad Unlimited Lite Plan Paid Upfront
+Nomad-Unlimited-Travel-Plan-Paid-Upfront	Nomad Unlimited Travel Plan Paid Upfront
+Unlimited-Residential-Plan-Paid-Upfront	Unlimited Residential Plan Paid Upfront
+Nomad-Prime-Oasis-Upgrade	Nomad Prime + Oasis Upgrade
+Nomad-Oasis-Upgrade-Full	Nomad Oasis Upgrade Full
+Nomad-Prime-Full	Nomad Prime 9.95
+legendary-charge	Legendary Charge
+Sim-Card-Activation-Kit	Sim Card & Activation Kit
+Nomad-Unlimited-Travel-Plan-01	Nomad Unlimited Travel Plan Checkout
+Nomad-Unlimited-Lite-Plan-01	Nomad Unlimited Lite Plan Checkout
+Nomad-Unlimited-Light-Plan-Modem	Nomad Unlimited Light Plan & Modem
+Nomad-Mini--Modem-Kit	Nomad Mini-Modem Kit - One time Rental
+Nomad-Unlimited-Residential-Plan-Modem	Nomad Unlimited Residential Plan & Modem
+Nomad-Standard-Modem-Kit	Nomad Standard Modem Kit - One time Rental
+Nomad-Mini-Kit	Nomad Mini Kit
+Standard-Modem-Kit	Standard Modem Kit
+Nomad-Unlimited-Lite-Plan	Nomad Unlimited Lite Plan
+Nomad-Unlimited-Travel-Plan	Nomad Unlimited Travel Plan
+nomad-unlimited-home	Nomad Unlimited Home
+Nomad-Unlimited-Residential-Plan	Nomad Unlimited Residential Plan
+Nomad-Unlimited-Power-Plan-30-First-Month-25-Gift-Card	Nomad Unlimited Travel Plan $59.95 First Month + $30 Gift Card
+Nomad-Unlimited-Travel-Plan-20-First-Month-25-Gift-Card	Nomad Unlimited Residential Plan $49.95 First Month + $20 Gift Card
+Nomad-Dragon-Service-Plan	Nomad Dragon Service Plan
+Nomad-Dragon	Nomad Dragon
+Bryan-test-Charge	Bryan test Charge
+Nomad-Dragon-Service	Nomad Unlimited Lite Plan $29.95 First Month + $10 Gift Card
+Test-1	Test $1
+UNLIMITED-TRAVEL-PLAN-PROMO	UNLIMITED TRAVEL PLAN PROMO
+UNLIMITED-RESIDENTIAL-PLAN	UNLIMITED RESIDENTIAL PLAN Checkout

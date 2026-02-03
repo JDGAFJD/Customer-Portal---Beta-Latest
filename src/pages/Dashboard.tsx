@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ChatWidget } from '../components/ChatWidget'
 import { FeedbackButton } from '../components/FeedbackButton'
+import { getPlanDisplayName } from '../utils/planNames'
 
 interface Customer {
   id: number
@@ -650,7 +651,7 @@ void collectibleInvoices.length
                         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-lg font-semibold text-text">{sub.planId}</h3>
+                              <h3 className="text-lg font-semibold text-text">{getPlanDisplayName(sub.planId)}</h3>
                               <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(sub.status)}`}>
                                 {sub.status}
                               </span>
@@ -1071,7 +1072,7 @@ void collectibleInvoices.length
                       <div className="p-6">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                           <div>
-                            <h3 className="text-lg font-bold text-text">{subscription.planId}</h3>
+                            <h3 className="text-lg font-bold text-text">{getPlanDisplayName(subscription.planId)}</h3>
                             <p className="text-sm text-muted">Subscription #{subscription.id}</p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1354,7 +1355,7 @@ void collectibleInvoices.length
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-text">Subscription Details</h2>
-                <p className="text-sm text-muted">{selectedSubscription.subscription.planId}</p>
+                <p className="text-sm text-muted">{getPlanDisplayName(selectedSubscription.subscription.planId)}</p>
               </div>
               <button
                 onClick={() => setSelectedSubscription(null)}
