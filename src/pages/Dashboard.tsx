@@ -1167,7 +1167,7 @@ void collectibleInvoices.length
                           )}
                         </div>
 
-                        {isActive && (
+                        {isActive && (isPaid || gracePeriod.inGracePeriod) && (
                           <div className="mt-4 flex gap-3">
                             <button
                               onClick={() => handleTroubleshooting(subscription.id, subscription.iccid, subscription.imei, subscription.mdn, lineState)}
