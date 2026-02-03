@@ -1,0 +1,170 @@
+Feature: Troubleshoot Internet – Line Restoration Flow
+Overview
+
+When a customer clicks the Troubleshoot button in the customer portal, they are redirected to a dedicated Troubleshooting Page. This page is responsible for diagnosing and resolving line-level issues before any device-level troubleshooting begins.
+
+This flow specifically handles cases where the customer’s line status is suspended or not fully active in ThingSpace.
+
+Entry Point
+
+Trigger: Customer clicks the Troubleshoot button
+Redirect: /troubleshoot (new page)
+
+Initial System Check (Automatic)
+
+When the troubleshooting page loads, the system must automatically perform the following checks without requiring additional customer input:
+
+Call the ThingSpace line status endpoint using the customer’s ICCID.
+
+Evaluate the returned line status.
+
+Supported Line Status States
+
+The troubleshooting page must handle the following line states:
+
+suspended
+
+pending_suspend
+
+pending_resume
+
+no_status_returned (null / empty / API returned no record)
+
+This document focuses only on the suspended state.
+
+Line Status: SUSPENDED
+Goal
+
+Automatically restore the customer’s line and clearly guide them through the wait and reboot process.
+
+Step 1: Initiate Line Restore
+
+If the line status returns as suspended:
+
+Call the ThingSpace Restore / Resume Line endpoint using:
+
+ICCID
+
+Associated MDN (already known by the system)
+
+Do not ask the customer to take any action at this stage.
+
+Step 2: Customer Messaging (Immediate)
+
+Immediately display a system message on the troubleshooting page:
+
+“We found that your internet line is currently suspended. We’re restoring it now.
+This usually takes about 2 minutes.”
+
+The page should visually indicate progress (spinner, progress bar, or countdown).
+
+Step 3: Timer – First Wait (2 Minutes)
+
+Start a 2-minute timer immediately after calling the restore endpoint.
+
+During this time:
+
+Do not poll excessively.
+
+Do not ask the customer to reboot yet.
+
+Keep the customer on the troubleshooting page.
+
+Step 4: Status Recheck After 2 Minutes
+
+After the 2-minute timer completes:
+
+Automatically call the ThingSpace line status endpoint again.
+
+Evaluate the new line status.
+
+Case A: Line Status = ACTIVE
+
+If the line status is now active:
+
+Display the following message:
+
+“Your line is now active.
+Please reboot your modem now. Unplug it from power, wait 30 seconds, then plug it back in.”
+
+Clearly state that:
+
+The reboot is required for the modem to reconnect.
+
+Internet should come back online shortly after reboot.
+
+Mark the troubleshooting flow as successfully completed.
+
+Case B: Line Status = PENDING_RESUME
+
+If the line status returns as pending_resume:
+
+Step 5: Customer Messaging (Delay Explanation)
+
+Display the following message:
+
+“Your line is in the process of being restored, but it’s taking a bit longer than usual.
+We’re still working on it and will check again shortly.”
+
+Step 6: Timer – Second Wait (1 Minute)
+
+Start an additional 1-minute timer.
+
+Do not ask the customer to reboot yet.
+
+Keep the customer informed that the process is ongoing.
+
+Step 7: Status Recheck After 1 Minute
+
+After the additional 1-minute timer:
+
+Call the ThingSpace line status endpoint again.
+
+Evaluate the result.
+
+Case B1: Line Status = ACTIVE (After Delay)
+
+If the line becomes active after the second check:
+
+Instruct the customer to reboot the modem using the same reboot message.
+
+Mark the flow as successfully completed.
+
+Case B2: Line Still Not Active
+
+If the line status is still pending or unresolved:
+
+Stop automated retries.
+
+Display a clear escalation message:
+
+“We’re still working on restoring your line, but it’s taking longer than expected.
+Our support team has been notified and will assist you further.”
+
+Trigger a support escalation internally.
+
+Do not continue polling.
+
+Important Rules (Non-Negotiable)
+
+Do not ask the customer for email, IMEI, or other inputs on this page.
+
+Do not start device troubleshooting until the line is confirmed active.
+
+Do not instruct the customer to reboot while the line is suspended or pending.
+
+Do not loop timers indefinitely.
+
+Always communicate wait times clearly to avoid confusion.
+
+Outcome
+
+This flow ensures:
+
+Line issues are resolved before device troubleshooting.
+
+Customers are not asked to reboot unnecessarily.
+
+Delays are explained clearly.
+
+Escalations happen only when automation genuinely fails.
