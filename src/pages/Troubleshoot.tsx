@@ -229,7 +229,7 @@ export default function Troubleshoot() {
         className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-8"
       >
         <div className="flex items-center justify-center mb-6">
-          <img src="/nomad-logo.png" alt="Nomad Internet" className="h-10" />
+          <img src="/logo.svg" alt="Nomad Internet" className="h-10" />
         </div>
 
         <h1 className="text-2xl font-bold text-center mb-2" style={{ color: '#0f172a' }}>
