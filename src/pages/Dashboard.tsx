@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ChatWidget } from '../components/ChatWidget'
+import { FeedbackButton } from '../components/FeedbackButton'
 
 interface Customer {
   id: number
@@ -1173,7 +1174,7 @@ void collectibleInvoices.length
                                 </button>
                                 
                                 {deviceHelpOpen === subscription.id && (
-                                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20 py-2">
+                                  <div className="absolute right-0 bottom-full mb-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-2">
                                     <button
                                       onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
                                       className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
@@ -1296,6 +1297,7 @@ void collectibleInvoices.length
       </main>
       
       {authToken && <ChatWidget token={authToken} dataLoaded={!isLoadingData} />}
+      {authToken && <FeedbackButton token={authToken} />}
 
       {showComingSoon && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

@@ -1387,6 +1387,60 @@ app.post("/api/escalation/create", async (req, res) => {
   }
 });
 
+app.post("/api/feedback", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const session = await storage.getSessionByToken(token);
+    let customerId: number | null = null;
+    let customerEmail = "";
+
+    if (session) {
+      customerId = session.customerId;
+      const customer = await storage.getCustomer(session.customerId);
+      customerEmail = customer?.email || "";
+    } else {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        if (decoded.isTest) {
+          customerEmail = decoded.email || "test@example.com";
+        } else {
+          return res.status(401).json({ error: "Invalid session" });
+        }
+      } catch {
+        return res.status(401).json({ error: "Invalid session" });
+      }
+    }
+
+    const { feedbackType, message, rating } = req.body;
+
+    if (!feedbackType || !message) {
+      return res.status(400).json({ error: "Feedback type and message are required" });
+    }
+
+    const feedback = await storage.createFeedback({
+      customerId,
+      customerEmail: customerEmail.toLowerCase(),
+      feedbackType,
+      message,
+      rating: rating || null
+    });
+
+    console.log("Feedback submitted:", feedback.id);
+
+    res.json({
+      success: true,
+      message: "Thank you for your feedback!"
+    });
+  } catch (error: any) {
+    console.error("Feedback submission error:", error);
+    res.status(500).json({ error: error.message || "Failed to submit feedback" });
+  }
+});
+
 app.get("/api/device/plans", async (req, res) => {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");

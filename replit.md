@@ -57,3 +57,13 @@ The design adheres to official Nomad Internet branding, featuring a modern SaaS 
   - Status recheck after 2 minutes: ACTIVE shows issue selection, PENDING_RESUME: 1-minute extended timer
   - "No line found" handling: activation request form with optional alternate email
   - Sends activation request to external webhook (app.lrlos.com)
+- Feb 3, 2026: Customer Feedback System
+  - Database table `customer_feedback` stores feedback type, message, rating
+  - "Submit Feedback" button in bottom left corner (next to chat icon)
+  - Modal with feedback type selection: Feature Request, Bug Report, General Feedback, Compliment
+  - Encourages customers to request new features and share thoughts
+  - API endpoint: POST /api/feedback
+- Feb 3, 2026: Device Help Dropdown Fix
+  - Fixed dropdown overflow issue - now appears above the button instead of being cut off
+  - Changed positioning from `mt-2` (top) to `bottom-full mb-2` (above button)
+  - Increased z-index to 50 for proper layering

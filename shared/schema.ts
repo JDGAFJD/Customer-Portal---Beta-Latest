@@ -54,6 +54,16 @@ export const escalationTickets = pgTable("escalation_tickets", {
   notificationEmail: varchar("notification_email", { length: 255 }),
 });
 
+export const customerFeedback = pgTable("customer_feedback", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").references(() => customers.id),
+  customerEmail: varchar("customer_email", { length: 255 }).notNull(),
+  feedbackType: varchar("feedback_type", { length: 50 }).notNull(),
+  message: text("message").notNull(),
+  rating: integer("rating"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const customersRelations = relations(customers, ({ many }) => ({
   otpCodes: many(otpCodes),
   sessions: many(sessions),
@@ -81,6 +91,8 @@ export type Session = typeof sessions.$inferSelect;
 export type InsertSession = typeof sessions.$inferInsert;
 export type EscalationTicket = typeof escalationTickets.$inferSelect;
 export type InsertEscalationTicket = typeof escalationTickets.$inferInsert;
+export type CustomerFeedback = typeof customerFeedback.$inferSelect;
+export type InsertCustomerFeedback = typeof customerFeedback.$inferInsert;
 
 export const insertCustomerSchema = createInsertSchema(customers);
 export const insertOtpCodeSchema = createInsertSchema(otpCodes);

@@ -1,4 +1,4 @@
-import { customers, otpCodes, sessions, escalationTickets, type Customer, type InsertCustomer, type OtpCode, type InsertOtpCode, type Session, type InsertSession, type EscalationTicket, type InsertEscalationTicket } from "../shared/schema";
+import { customers, otpCodes, sessions, escalationTickets, customerFeedback, type Customer, type InsertCustomer, type OtpCode, type InsertOtpCode, type Session, type InsertSession, type EscalationTicket, type InsertEscalationTicket, type CustomerFeedback, type InsertCustomerFeedback } from "../shared/schema";
 import { db } from "./db";
 import { eq, and, gt, or } from "drizzle-orm";
 
@@ -23,6 +23,8 @@ export interface IStorage {
   createEscalationTicket(ticket: InsertEscalationTicket): Promise<EscalationTicket>;
   getRecentEscalation(customerEmail: string, subscriptionId: string | null, iccid: string | null): Promise<EscalationTicket | undefined>;
   getEscalationByTicketId(ticketId: string): Promise<EscalationTicket | undefined>;
+  
+  createFeedback(feedback: InsertCustomerFeedback): Promise<CustomerFeedback>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -162,6 +164,11 @@ export class DatabaseStorage implements IStorage {
       .from(escalationTickets)
       .where(eq(escalationTickets.ticketId, ticketId));
     return ticket || undefined;
+  }
+
+  async createFeedback(feedback: InsertCustomerFeedback): Promise<CustomerFeedback> {
+    const [newFeedback] = await db.insert(customerFeedback).values(feedback).returning();
+    return newFeedback;
   }
 }
 
