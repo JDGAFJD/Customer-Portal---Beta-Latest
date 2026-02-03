@@ -159,7 +159,10 @@ export default function Dashboard() {
   const [authToken, setAuthToken] = useState<string | null>(null)
   const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionDetail | null>(null)
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null)
+  const [deviceHelpOpen, setDeviceHelpOpen] = useState<string | null>(null)
+  const [showComingSoon, setShowComingSoon] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const deviceHelpRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -232,6 +235,9 @@ export default function Dashboard() {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false)
+      }
+      if (deviceHelpRef.current && !deviceHelpRef.current.contains(event.target as Node)) {
+        setDeviceHelpOpen(null)
       }
     }
 
@@ -1137,10 +1143,10 @@ void collectibleInvoices.length
                         </div>
 
                         {isActive && (
-                          <div className="mt-4">
+                          <div className="mt-4 flex gap-3">
                             <button
                               onClick={() => handleTroubleshooting(subscription.id, subscription.iccid, subscription.imei, subscription.mdn, lineState)}
-                              className="w-full px-4 py-3 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 text-white shadow-md hover:shadow-lg"
+                              className="flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 text-white shadow-md hover:shadow-lg"
                               style={{ backgroundColor: '#10a37f' }}
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1149,6 +1155,74 @@ void collectibleInvoices.length
                               </svg>
                               Troubleshoot Internet
                             </button>
+                            
+                            {isPaid && (
+                              <div className="relative" ref={deviceHelpOpen === subscription.id ? deviceHelpRef : null}>
+                                <button
+                                  onClick={() => setDeviceHelpOpen(deviceHelpOpen === subscription.id ? null : subscription.id)}
+                                  className="px-4 py-3 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-50"
+                                  style={{ color: '#0f172a' }}
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  Device Help
+                                  <svg className={`w-4 h-4 transition-transform ${deviceHelpOpen === subscription.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </button>
+                                
+                                {deviceHelpOpen === subscription.id && (
+                                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20 py-2">
+                                    <button
+                                      onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
+                                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                                    >
+                                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                      </svg>
+                                      <span style={{ color: '#0f172a' }}>Device not powering on</span>
+                                    </button>
+                                    <button
+                                      onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
+                                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                                    >
+                                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                      </svg>
+                                      <span style={{ color: '#0f172a' }}>WiFi name not on list</span>
+                                    </button>
+                                    <button
+                                      onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
+                                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                                    >
+                                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                      </svg>
+                                      <span style={{ color: '#0f172a' }}>Unable to connect my TV</span>
+                                    </button>
+                                    <button
+                                      onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
+                                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                                    >
+                                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                      </svg>
+                                      <span style={{ color: '#0f172a' }}>Need replacement power cord</span>
+                                    </button>
+                                    <button
+                                      onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
+                                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                                    >
+                                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                      </svg>
+                                      <span style={{ color: '#0f172a' }}>Change WiFi password</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                         
@@ -1222,6 +1296,31 @@ void collectibleInvoices.length
       </main>
       
       {authToken && <ChatWidget token={authToken} dataLoaded={!isLoadingData} />}
+
+      {showComingSoon && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10a37f20' }}>
+                <svg className="w-8 h-8" style={{ color: '#10a37f' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-text mb-2">Coming Soon!</h3>
+              <p className="text-muted mb-6">
+                This feature is currently under development and will be available soon. Thank you for your patience!
+              </p>
+              <button
+                onClick={() => setShowComingSoon(false)}
+                className="px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg"
+                style={{ backgroundColor: '#10a37f' }}
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedSubscription && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

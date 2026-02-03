@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 type TroubleshootStep = 
   | 'checking'
   | 'active'
+  | 'issue_not_working'
+  | 'issue_speed'
   | 'resuming'
   | 'waiting_first'
   | 'rechecking_first'
@@ -464,24 +466,178 @@ export default function Troubleshoot() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-center py-8"
+              className="py-8"
             >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10a37f20' }}>
-                <svg className="w-8 h-8" style={{ color: '#10a37f' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10a37f20' }}>
+                  <svg className="w-8 h-8" style={{ color: '#10a37f' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-lg font-medium" style={{ color: '#0f172a' }}>Your line is active</p>
+                <p className="text-gray-500 mt-2">What issue are you experiencing?</p>
               </div>
-              <p className="text-lg font-medium" style={{ color: '#0f172a' }}>Your line is already active!</p>
-              <p className="text-gray-500 mt-2 mb-6">
-                If you're still experiencing issues, try rebooting your modem. Unplug it from power, wait 30 seconds, then plug it back in.
-              </p>
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg"
-                style={{ backgroundColor: '#10a37f' }}
-              >
-                Back to Dashboard
-              </button>
+              
+              <div className="space-y-3 mb-6">
+                <button
+                  onClick={() => setStep('issue_not_working')}
+                  className="w-full p-4 rounded-lg border border-gray-200 hover:border-primary hover:bg-gray-50 transition-all text-left flex items-center gap-4"
+                >
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#ef444420' }}>
+                    <svg className="w-6 h-6" style={{ color: '#ef4444' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a5 5 0 01-7.072-7.072m7.072 7.072L6.343 17.657M6.343 6.343L3 3m3.343 3.343a5 5 0 017.072 0" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium" style={{ color: '#0f172a' }}>Internet is not working at all</p>
+                    <p className="text-sm text-gray-500">No connection, can't browse or use apps</p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setStep('issue_speed')}
+                  className="w-full p-4 rounded-lg border border-gray-200 hover:border-primary hover:bg-gray-50 transition-all text-left flex items-center gap-4"
+                >
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#f59e0b20' }}>
+                    <svg className="w-6 h-6" style={{ color: '#f59e0b' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium" style={{ color: '#0f172a' }}>Speed issues</p>
+                    <p className="text-sm text-gray-500">Internet is slow, buffering, or lagging</p>
+                  </div>
+                </button>
+              </div>
+              
+              <div className="text-center">
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="text-sm font-medium transition-all hover:underline"
+                  style={{ color: '#10a37f' }}
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'issue_not_working' && (
+            <motion.div
+              key="issue_not_working"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="py-8"
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ef444420' }}>
+                  <svg className="w-8 h-8" style={{ color: '#ef4444' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a5 5 0 01-7.072-7.072m7.072 7.072L6.343 17.657M6.343 6.343L3 3m3.343 3.343a5 5 0 017.072 0" />
+                  </svg>
+                </div>
+                <p className="text-lg font-medium" style={{ color: '#0f172a' }}>Internet Not Working</p>
+                <p className="text-gray-500 mt-2">Let's try rebooting your device</p>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 mb-6">
+                <h4 className="font-semibold text-blue-800 mb-3">Please follow these steps:</h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-blue-700">
+                  <li>Unplug your modem from the power outlet</li>
+                  <li>Wait 30 seconds</li>
+                  <li>Plug the modem back in</li>
+                  <li>Wait 2-3 minutes for it to fully restart</li>
+                  <li>Check if your internet is working</li>
+                </ol>
+              </div>
+              
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-600">
+                  <strong>Still not working?</strong> If rebooting didn't help, please contact our support team at <a href="tel:+18447677770" className="font-medium" style={{ color: '#10a37f' }}>1-844-767-7770</a> or use the chat feature on your dashboard.
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep('active')}
+                  className="flex-1 px-4 py-3 rounded-lg font-medium transition-all border border-gray-300 hover:bg-gray-50"
+                  style={{ color: '#0f172a' }}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="flex-1 px-4 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg"
+                  style={{ backgroundColor: '#10a37f' }}
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'issue_speed' && (
+            <motion.div
+              key="issue_speed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="py-8"
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#f59e0b20' }}>
+                  <svg className="w-8 h-8" style={{ color: '#f59e0b' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <p className="text-lg font-medium" style={{ color: '#0f172a' }}>Speed Issues</p>
+                <p className="text-gray-500 mt-2">Here are some tips to improve your speed</p>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 mb-6">
+                <h4 className="font-semibold text-blue-800 mb-3">Try these solutions:</h4>
+                <ul className="space-y-3 text-sm text-blue-700">
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold">1.</span>
+                    <span><strong>Reboot your modem:</strong> Unplug it, wait 30 seconds, and plug it back in</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold">2.</span>
+                    <span><strong>Move closer to your device:</strong> Distance and walls can affect WiFi signal</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold">3.</span>
+                    <span><strong>Reduce connected devices:</strong> Too many devices can slow down your connection</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold">4.</span>
+                    <span><strong>Check for interference:</strong> Microwaves and other electronics can affect WiFi</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-gray-600">
+                  <strong>Still experiencing issues?</strong> Speed can vary based on network congestion and location. Contact our support team at <a href="tel:+18447677770" className="font-medium" style={{ color: '#10a37f' }}>1-844-767-7770</a> for further assistance.
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep('active')}
+                  className="flex-1 px-4 py-3 rounded-lg font-medium transition-all border border-gray-300 hover:bg-gray-50"
+                  style={{ color: '#0f172a' }}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="flex-1 px-4 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg"
+                  style={{ backgroundColor: '#10a37f' }}
+                >
+                  Back to Dashboard
+                </button>
+              </div>
             </motion.div>
           )}
 

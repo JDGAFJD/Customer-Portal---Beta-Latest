@@ -1,232 +1,59 @@
 # Nomad Internet Customer Portal
 
 ## Overview
-A customer portal for Nomad Internet customers with sign-in and sign-up functionality. The portal uses official Nomad Internet branding with a modern SaaS-style design. Features full authentication with OTP verification, PostgreSQL database for customer storage, and activity tracking.
+The Nomad Internet Customer Portal is a web application designed to provide Nomad Internet customers with a modern, feature-rich platform for managing their services. It includes full authentication, subscription management, order tracking, invoicing, and device management capabilities. The portal aims to enhance the customer experience by offering self-service options and detailed insights into their internet services.
 
-## Tech Stack
-- **Frontend**: React 18 + TypeScript
-- **Backend**: Express.js + TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
-- **Styling**: Tailwind CSS v4
-- **Animations**: Framer Motion
-- **Routing**: React Router DOM
-- **Build Tool**: Vite
-- **Auth**: JWT-based sessions with bcrypt password hashing
+## User Preferences
+I prefer detailed explanations, especially for complex features or architectural decisions. I want to be informed before major changes are made to the codebase. I expect iterative development with clear communication at each step.
 
-## Design System
-- **Primary Color**: #10a37f (brand green)
-- **Accent Color**: #0a8f6a (deep green)
-- **Background**: #f7faf9 (light mint)
-- **Text**: #0f172a (slate-900)
-- **Muted**: #64748b (slate-500)
-- **Font**: Inter (system fonts fallback)
-- **Logo**: Nomad Internet official logo
+## System Architecture
+The portal is built with a React frontend, an Express.js backend, and a PostgreSQL database utilizing Drizzle ORM. Styling is managed with Tailwind CSS, and animations are handled by Framer Motion. Authentication is JWT-based with bcrypt for password hashing and OTP verification for sign-up and sign-in.
 
-### Key Design Elements
-- Glassmorphism card with backdrop blur
-- Gradient left panel with layered radial gradients
-- 34px bold titles (800 weight)
-- 52px tall inputs with subtle focus rings
-- 54px gradient buttons with shadows
-- Stats section with border-top styling
+### UI/UX Decisions
+The design adheres to official Nomad Internet branding, featuring a modern SaaS aesthetic. Key elements include a glassmorphism card design, gradient panels, Inter font, and a distinct color palette with `#10a37f` as the primary brand green. User interactions are designed with large input fields, gradient buttons, and visual feedback for actions. The dashboard features a tabbed interface for various sections like Overview, Subscriptions, Orders, Invoices, and Internet.
 
-## Project Structure
-```
-src/
-├── components/
-│   ├── AuthLayout.tsx    # Two-column layout with glassmorphism card
-│   ├── Button.tsx        # Gradient button with hover animations
-│   ├── ChatWidget.tsx    # JADA AI chatbot floating widget
-│   └── Input.tsx         # Tall styled input with tooltips
-├── pages/
-│   ├── SignIn.tsx        # Sign-in page (password or OTP)
-│   ├── SignUp.tsx        # Multi-step sign-up flow
-│   ├── ForgotPassword.tsx # Password reset flow
-│   ├── Dashboard.tsx     # Main dashboard (5 tabs: Overview, Subscriptions, Orders, Invoices, Internet)
-│   ├── AccountSettings.tsx # Update name, password, phone
-│   ├── ActivityLog.tsx   # Login history and activity
-│   ├── Troubleshoot.tsx  # Dedicated line restoration troubleshooting page
-│   └── TestLogin.tsx     # Test portal at /testing6699452
-├── App.tsx               # Router configuration
-├── main.tsx              # App entry point
-└── index.css             # Global styles + design tokens
+### Technical Implementations
+- **Authentication**: Supports traditional email/password and OTP-based passwordless sign-in. The sign-up process includes multi-step verification via phone and email OTP. Password reset is also OTP-verified.
+- **Customer Data Aggregation**: A unified service layer integrates data from multiple external APIs (Chargebee, Shopify, Shipstation, ThingSpace) to provide a comprehensive view of customer information, subscriptions, orders, and device statuses.
+- **Subscription & Billing**: Displays detailed subscription information, including ICCID/IMEI/MDN. Integrates with Chargebee for invoice viewing, payment collection, and payment method management. Supports subscription-grouped invoices and bulk payment options.
+- **Device Management**: The "Internet" tab provides real-time line status indicators from ThingSpace. It supports changing device plans and includes a dedicated troubleshooting page for line restoration with automated recovery attempts and escalation options.
+- **AI Chatbot**: An integrated JADA AI chatbot powered by OpenAI GPT-4o provides customer support with contextual awareness of the user's account data.
+- **Activity Tracking**: Logs user login history and other account activities.
 
-server/
-├── index.ts              # Express API endpoints (auth, billing, device management)
-├── services.ts           # External API integrations (Chargebee, Shopify, Shipstation, ThingSpace)
-├── chat.ts               # JADA AI chatbot with OpenAI GPT-4o
-├── storage.ts            # Database storage layer (customers, sessions, OTP)
-└── db.ts                 # Drizzle database connection
+### Feature Specifications
+- **Sign-Up Flow**: Email validation (local DB & Chargebee), phone number collection with OTP, email OTP verification, full name and password creation, auto-login.
+- **Sign-In Methods**: Password-based and OTP (passwordless) authentication.
+- **Forgot Password Flow**: Email-based OTP verification, secure reset token issuance, new password creation.
+- **Account Management**: Users can update their name, password, and phone number (with OTP verification).
+- **Dashboard**: Centralized view with tabs for Overview, Subscriptions (hierarchical view for multiple customers), Orders (combined Shopify/Shipstation data), Invoices (with payment options), and Internet (device status, plan changes, troubleshooting).
+- **Troubleshooting**: Automated line status checks, suspended line auto-restoration, escalation to support with ticket tracking, and issue-specific guidance for active lines.
 
-shared/
-└── schema.ts             # Database schema (customers, otp_codes, sessions)
-
-docs/
-└── API-DOCUMENTATION.md  # External API integration reference
-```
-
-## Database Schema
-- **customers**: email, phone, password hash, verification status, Chargebee ID, login tracking
-- **otp_codes**: 6-digit codes with 10-minute expiration, types (phone/email/signin)
-- **sessions**: JWT tokens with 7-day expiration
-
-## API Documentation
-See `docs/API-DOCUMENTATION.md` for detailed information about all external API integrations including:
-- Chargebee (billing, subscriptions, invoices, transactions)
-- Shopify Admin API (orders, fulfillments)
-- Shipstation (shipping, tracking, IMEI/ICCID custom fields)
-- ThingSpace (Verizon device management)
-
-## Sign-Up Flow
-1. **Email Step**: User enters email, checked against local database first
-   - If user exists with password, shows message to sign in instead with links to Sign In and Forgot Password
-   - If not in local DB, checks against Chargebee API
-2. **Confirm Email**: If not found in Chargebee, asks user to confirm or try different email
-3. **Phone Step**: Collects US phone number (+1 format with validation)
-4. **Phone OTP**: Backend generates 6-digit OTP, sends via Twilio, user enters code
-5. **Email OTP**: Backend generates 6-digit OTP, sends via Twilio, user enters code
-6. **Full Name + Password**: User enters full name and creates password (min 8 characters)
-7. **Auto-login**: User is automatically logged in and redirected to dashboard
-
-## Sign-In Methods
-1. **Password**: Traditional email + password authentication
-2. **OTP (Passwordless)**: Email OTP sent, verified, then logged in
-
-## Forgot Password Flow
-1. **Email Step**: User enters email, OTP sent with indicator "Email OTP forgot password"
-2. **Verify OTP**: User enters 6-digit code, server issues secure reset token (15-min expiry)
-3. **Reset Password**: User creates new password, reset token validated and invalidated after use
-4. **Success**: User redirected to sign in with new password
-
-## Backend API Endpoints
-- `POST /api/auth/check-email` - Verify email against Chargebee
-- `POST /api/auth/check-existing-user` - Check if email exists in local database
-- `POST /api/auth/send-phone-otp` - Generate and send phone OTP
-- `POST /api/auth/verify-phone-otp` - Verify phone OTP code
-- `POST /api/auth/send-email-otp` - Generate and send email OTP
-- `POST /api/auth/verify-email-only` - Verify email OTP (sign-up)
-- `POST /api/auth/complete-signup` - Set password, full name, and complete registration
-- `POST /api/auth/signin` - Password-based sign in
-- `POST /api/auth/signin-otp` - Request OTP for sign in
-- `POST /api/auth/verify-signin-otp` - Verify OTP and sign in
-- `POST /api/auth/forgot-password` - Send OTP for password reset
-- `POST /api/auth/verify-forgot-password-otp` - Verify OTP and issue reset token
-- `POST /api/auth/reset-password` - Reset password with valid reset token
-- `POST /api/auth/update-name` - Update user's full name
-- `POST /api/auth/update-password` - Change password (requires current password)
-- `POST /api/auth/request-phone-change` - Send OTP to verify new phone number
-- `POST /api/auth/verify-phone-change` - Verify OTP and update phone number
-- `GET /api/auth/me` - Get current user profile
-- `POST /api/auth/logout` - Invalidate session
-
-## External API Endpoints
-- Chargebee API (direct) - `https://{CHARGEBEE_SITE}.chargebee.com/api/v2/` - Customer, subscription, invoice, transaction lookup
-- `POST https://app.lrlos.com/webhook/twilio/sendotp` - Send OTP codes
-- Shopify Admin API - Order retrieval
-- Shipstation API - Shipping and tracking information
-- ThingSpace API - Device status and management
-
-## Environment Variables
-- `DATABASE_URL` - PostgreSQL connection string (auto-configured)
-- `JWT_SECRET` - Secret key for JWT token signing (required)
-
-## Running the App
-```bash
-npm run dev      # Frontend on port 5000
-npm run server   # Backend on port 3001
-npm run db:push  # Push database schema
-```
+## External Dependencies
+- **Chargebee**: Billing, subscriptions, invoices, transactions, customer management.
+- **Shopify Admin API**: Order retrieval and fulfillment information.
+- **Shipstation**: Shipping and tracking details, custom fields for IMEI/ICCID.
+- **ThingSpace (Verizon)**: Device management, line status, plan information, device activation/deactivation.
+- **Twilio**: Sending OTP codes for phone and email verification.
+- **OpenAI GPT-4o**: Powering the JADA AI chatbot.
+- **`app.lrlos.com`**: External webhook for sending OTPs and activation requests.
 
 ## Recent Changes
-- Jan 24, 2026: Full authentication implementation
-  - PostgreSQL database with customers, OTP codes, and sessions tables
-  - Express backend with OTP generation, verification, and auth endpoints
-  - Sign-up flow with phone and email OTP verification
-  - Sign-in with password or OTP-based authentication
-  - Dashboard with account info and activity tracking (last login, login count)
-  - JWT-based session management with 7-day tokens
-  - Secure email OTP verification before password creation
-- Jan 24, 2026: Forgot Password and existing user detection
-  - Check existing user endpoint to detect registered users during signup
-  - Show links to Sign In and Forgot Password for existing users
-  - Forgot Password flow with OTP verification (indicator: "Email OTP forgot password")
-  - Secure reset token system (15-min expiry, single-use, invalidated on new OTP request)
-  - Full name collection during signup and display on dashboard
-- Jan 24, 2026: Account Settings and Activity Log
-  - Profile avatar with dropdown menu (Account Settings, Activity Log, Sign Out)
-  - Account Settings page to update full name, password, and phone number
-  - Phone number change requires OTP verification and checks for duplicate numbers
-  - Activity Log page with login statistics and account history
-  - Removed Activity section from main dashboard (moved to Activity Log page)
-- Jan 28, 2026: Comprehensive Customer Data Integration
-  - Unified service layer (server/services.ts) fetching data from Chargebee, Shopify, Shipstation, ThingSpace
-  - New /api/customer/full-data endpoint aggregating all customer information
-  - Enhanced Dashboard with 5 tabs: Overview, Subscriptions, Orders, Invoices, Devices
-  - Combined Shopify + Shipstation orders with unified tracking information
-  - Subscriptions display ICCID/IMEI/MDN from Chargebee custom fields
-  - ThingSpace integration for device status lookup by ICCID
-  - Expandable "Raw Data" panels on all sections to show complete JSON payloads
-- Jan 28, 2026: Chargebee Multi-Customer Hierarchy Support
-  - Restructured ChargebeeData to support: one email → multiple customers → multiple subscriptions per customer
-  - Dashboard Subscriptions tab shows hierarchical view with customer account headers (when multiple exist)
-  - Added totalSubscriptions, totalInvoices, totalDue aggregation across all customers
-  - Helper arrays (allSubscriptions, allInvoices, allTransactions) for flattened data access
-  - IMEI/ICCID display in Orders section from Shipstation advancedOptions.customField1/2
-  - Optimized API calls: Shopify orders by email parameter, Shipstation orders by order numbers
-- Jan 28, 2026: AI Customer Support Chatbot (JADA)
-  - Added OpenAI GPT-4o integration for customer support chatbot named "JADA"
-  - Floating chat widget on Dashboard (src/components/ChatWidget.tsx)
-  - /api/chat endpoint passes full account context to AI (server/chat.ts)
-  - Context includes: subscriptions, invoices, orders, devices, billing info
-  - Conversation history maintained for follow-up questions
-  - **To edit AI instructions**: Modify `SYSTEM_PROMPT` constant in `server/chat.ts`
-  - Uses JADA robot avatar (public/jada-avatar.png) for branding
-- Jan 29, 2026: Subscription-Grouped Invoices & Payment Functionality
-  - Added subscriptionId field to invoices for linking invoices to specific subscriptions
-  - Subscription detail modal showing linked invoices and transactions when "View Invoices & Transactions" is clicked
-  - Chargebee hosted page integration for secure payments
-  - "Pay Now" button on subscriptions with outstanding balance (opens Chargebee collect_now page)
-  - "Update Payment Method" button opens Chargebee manage_payment_sources page
-  - Direct "Pay" button on individual invoices in both Invoices tab and subscription detail modal
-  - Pay All Due button in Invoices tab header for bulk payment
-  - API endpoints: /api/billing/collect-now-url, /api/billing/update-payment-method-url, /api/billing/collect-payment
-- Jan 31, 2026: Internet Tab Redesign with Line Status Indicators
-  - Redesigned Internet tab to show subscription-based cards instead of device-centric view
-  - Each subscription displays: status (Active/Inactive), payment status (Paid/Unpaid/Grace Period), plan name, IMEI, ICCID
-  - ThingSpace line status section with visual indicators below each subscription:
-    - Green (connected WiFi icon): Active line status
-    - Yellow (clock icon): Pending resume, pending account update
-    - Red (disconnected icon): Deactive, suspend, pending suspend, or no response
-  - Normalized status matching handles variations (underscores, dashes, case-insensitive)
-  - Device lookup uses ICCID, IMEI, or MDN fallback for robust matching
-  - 3-day grace period for unpaid subscriptions using dueSince field from Chargebee:
-    - Orange "Grace Period" badge when within 3 days of due date
-    - Grace period message shows remaining days and encourages payment
-    - After 3 days: Red "Unpaid" badge with "Payment Overdue" message showing days overdue
-  - Test portal at /testing6699452 for testing with any email (no database storage)
-- Feb 1, 2026: Device Plan Change Feature
-  - "Change Plan" button in Internet tab subscription cards
-  - Fetches available plans from ThingSpace API (/api/device/plans)
-  - Dropdown selector showing plan name and code
-  - Backend verifies device ownership before allowing plan changes
-  - Current plan derived from ThingSpace API (not client-supplied) for security
-  - API endpoints: GET /api/device/plans, POST /api/device/change-plan
+- Feb 3, 2026: Active Line Issue Selection
+  - When line is active in troubleshooting, customer selects issue type:
+    - "Internet is not working at all" - Shows reboot instructions and support contact
+    - "Speed issues" - Shows tips to improve speed and support contact
+- Feb 3, 2026: Device Help Options in Internet Tab
+  - "Device Help" dropdown button next to Troubleshoot button (paid services only)
+  - Options: Device not powering on, WiFi name not on list, Unable to connect TV, Need replacement power cord, Change WiFi password
+  - All options show "Coming Soon" modal when clicked (feature under development)
+- Feb 3, 2026: Escalation Tracking System
+  - Database table `escalation_tickets` stores ticket ID, customer email, subscription, issue type
+  - 24-hour cooldown prevents duplicate escalations
+  - Unique ticket IDs (ESC-xxx-xxxx format)
+  - API endpoints: POST /api/escalation/check, POST /api/escalation/create
 - Feb 3, 2026: Dedicated Troubleshooting Page
   - New /troubleshoot page with automatic line status check on load
   - Suspended line handling: auto-restore via ThingSpace API + 2-minute timer with progress UI
-  - Status recheck after 2 minutes: ACTIVE shows reboot instructions, PENDING_RESUME triggers 1-minute extended timer
-  - Escalation message with support contact if line still not active after extended timer
-  - Troubleshoot button in Internet tab navigates to /troubleshoot with subscription context (ICCID, IMEI, MDN)
-  - Supports fallback identifiers: uses ICCID first, then IMEI, then MDN
-  - Normalized status handling from both device.carrier.state and device.state
-  - "No line found" handling: when device returns 404, shows activation request form
-  - Customer can optionally enter alternate email for notifications
-  - Sends activation request to external webhook (app.lrlos.com) with full customer context
-  - API endpoint: POST /api/device/activate-line
-  - Escalation tracking with 24-hour cooldown:
-    - Database table `escalation_tickets` stores ticket ID, customer email, subscription, issue type
-    - "Escalate Issue" button checks for existing open tickets within 24 hours
-    - If ticket exists < 24 hours: Shows "Issue Already Escalated" with ticket ID and remaining hours
-    - If no ticket or > 24 hours: Creates new escalation ticket with unique ID (ESC-xxx-xxxx format)
-    - Customer notified via email when issue is resolved
-    - API endpoints: POST /api/escalation/check, POST /api/escalation/create
+  - Status recheck after 2 minutes: ACTIVE shows issue selection, PENDING_RESUME: 1-minute extended timer
+  - "No line found" handling: activation request form with optional alternate email
+  - Sends activation request to external webhook (app.lrlos.com)
