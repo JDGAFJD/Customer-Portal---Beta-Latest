@@ -53,6 +53,8 @@ export function CancellationModal({ isOpen, onClose, subscription, token }: Canc
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [ticketId, setTicketId] = useState('')
+  const [discountEligible, setDiscountEligible] = useState(true)
+  const [isUnpaidSubscription, setIsUnpaidSubscription] = useState(false)
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -109,6 +111,8 @@ export function CancellationModal({ isOpen, onClose, subscription, token }: Canc
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error)
+      setDiscountEligible(data.discountEligible !== false)
+      setIsUnpaidSubscription(data.isUnpaid === true)
       setStep(data.nextStep as FlowStep)
     } catch (err: any) {
       setError(err.message || 'Failed to submit reason')
@@ -483,6 +487,20 @@ export function CancellationModal({ isOpen, onClose, subscription, token }: Canc
 
           {step === 'contact_preference' && (
             <div className="space-y-4">
+              {!discountEligible && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-amber-800 text-sm">
+                    <span className="font-medium">Note:</span> You received a discount within the last 2 months, so you are not currently eligible for another discount offer.
+                  </p>
+                </div>
+              )}
+              {isUnpaidSubscription && (selectedReason === 'slow_speeds' || selectedReason === 'not_reliable') && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-800 text-sm">
+                    <span className="font-medium">Note:</span> Since your subscription is not currently active, we cannot perform remote troubleshooting. Our team will follow up with you.
+                  </p>
+                </div>
+              )}
               <p className="text-gray-600">
                 A member of our retention team will reach out to discuss your options.
                 How would you prefer to be contacted?

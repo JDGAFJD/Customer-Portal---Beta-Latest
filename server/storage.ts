@@ -45,6 +45,7 @@ export interface IStorage {
   getCancellationRequest(id: number): Promise<CancellationRequest | undefined>;
   updateCancellationRequest(id: number, data: Partial<InsertCancellationRequest>): Promise<CancellationRequest | undefined>;
   getCancellationRequestsByCustomer(customerEmail: string): Promise<CancellationRequest[]>;
+  checkRecentDiscountForSubscription(subscriptionId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -311,6 +312,25 @@ export class DatabaseStorage implements IStorage {
       .from(cancellationRequests)
       .where(eq(cancellationRequests.customerEmail, customerEmail.toLowerCase()))
       .orderBy(desc(cancellationRequests.createdAt));
+  }
+
+  async checkRecentDiscountForSubscription(subscriptionId: string): Promise<boolean> {
+    const twoMonthsAgo = new Date();
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+    
+    const recentDiscount = await db
+      .select()
+      .from(cancellationRequests)
+      .where(
+        and(
+          eq(cancellationRequests.subscriptionId, subscriptionId),
+          eq(cancellationRequests.retentionOfferAccepted, true),
+          gt(cancellationRequests.discountAppliedAt, twoMonthsAgo)
+        )
+      )
+      .limit(1);
+    
+    return recentDiscount.length > 0;
   }
 }
 

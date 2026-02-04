@@ -2304,11 +2304,20 @@ app.post("/api/cancellation/submit-reason", async (req, res) => {
       return res.status(404).json({ error: "Cancellation request not found" });
     }
 
+    const hasRecentDiscount = await storage.checkRecentDiscountForSubscription(request.subscriptionId);
+    const isUnpaid = request.subscriptionStatus === "non_renewing" || 
+                     request.subscriptionStatus === "cancelled" ||
+                     request.subscriptionStatus === "paused";
+
     let nextStep = "retention_offer";
+    let discountEligible = !hasRecentDiscount;
+    
     if (reason === "too_expensive") {
-      nextStep = "price_negotiation";
-    } else if (reason === "slow_speeds" || reason === "not_reliable") {
+      nextStep = hasRecentDiscount ? "contact_preference" : "price_negotiation";
+    } else if ((reason === "slow_speeds" || reason === "not_reliable") && !isUnpaid) {
       nextStep = "troubleshooting_offer";
+    } else if (hasRecentDiscount) {
+      nextStep = "contact_preference";
     }
 
     await storage.updateCancellationRequest(requestId, {
@@ -2317,7 +2326,7 @@ app.post("/api/cancellation/submit-reason", async (req, res) => {
       flowStep: nextStep
     });
 
-    res.json({ success: true, nextStep, reason });
+    res.json({ success: true, nextStep, reason, discountEligible, isUnpaid });
   } catch (error: any) {
     console.error("Submit reason error:", error);
     res.status(500).json({ error: error.message || "Failed to submit reason" });
@@ -2447,6 +2456,7 @@ app.post("/api/cancellation/respond-to-offer", async (req, res) => {
     if (accepted) {
       await storage.updateCancellationRequest(requestId, {
         retentionOfferAccepted: true,
+        discountAppliedAt: new Date(),
         status: "retained",
         flowStep: "completed",
         completedAt: new Date()
@@ -2587,27 +2597,52 @@ app.post("/api/cancellation/submit-contact", async (req, res) => {
 
     if (zendeskSubdomain && zendeskEmail && zendeskToken) {
       try {
+        const discountStatus = request.retentionOfferAccepted === true 
+          ? "✅ DISCOUNT ACCEPTED - Customer accepted the retention offer and will continue service"
+          : request.retentionOfferAccepted === false 
+            ? "❌ DISCOUNT DECLINED - Customer rejected the retention offer"
+            : request.discountAppliedAt 
+              ? "⚠️ NOT ELIGIBLE - Customer received a discount within the last 2 months"
+              : "N/A - No retention offer presented";
+
         const ticketBody = {
           ticket: {
             subject: `Cancellation Request - ${request.subscriptionId}`,
             comment: {
               body: `Customer cancellation request submitted through portal.
 
+═══════════════════════════════════════
+CUSTOMER INFORMATION
+═══════════════════════════════════════
 Customer Email: ${customerEmail}
 Customer Name: ${customer?.fullName || "N/A"}
 Subscription ID: ${request.subscriptionId}
-Current Price: $${((request.currentPrice || 0) / 100).toFixed(2)}
+Subscription Status: ${request.subscriptionStatus || "N/A"}
+Current Price: $${((request.currentPrice || 0) / 100).toFixed(2)}/month
 
-Cancellation Reason: ${request.cancellationReason}
-${request.reasonDetails ? `Details: ${request.reasonDetails}` : ""}
-${request.targetPrice ? `Target Price: $${(request.targetPrice / 100).toFixed(2)}` : ""}
+═══════════════════════════════════════
+CANCELLATION DETAILS
+═══════════════════════════════════════
+Reason: ${request.cancellationReason?.replace(/_/g, " ").toUpperCase()}
+${request.reasonDetails ? `Additional Details: ${request.reasonDetails}` : ""}
+${request.targetPrice ? `Target Price Requested: $${(request.targetPrice / 100).toFixed(2)}/month` : ""}
 
-Retention Offer Shown: ${request.retentionOfferShown || "None"}
-Retention Offer Accepted: ${request.retentionOfferAccepted === true ? "Yes" : request.retentionOfferAccepted === false ? "No" : "N/A"}
+═══════════════════════════════════════
+RETENTION OFFER STATUS
+═══════════════════════════════════════
+Offer Shown: ${request.retentionOfferShown || "None"}
+${discountStatus}
+${request.troubleshootingOffered ? `Troubleshooting Offered: ${request.troubleshootingAccepted ? "Accepted" : "Declined"}` : ""}
 
-Preferred Contact Method: ${contactMethod}
-${phone ? `Phone: ${phone}` : ""}
-${callTime ? `Best Time to Call: ${callTime}` : ""}`,
+═══════════════════════════════════════
+CONTACT PREFERENCES
+═══════════════════════════════════════
+Preferred Contact: ${contactMethod === "email" ? "Email" : "Phone Call"}
+${phone ? `Phone Number: ${phone}` : ""}
+${callTime ? `Best Time to Call: ${callTime}` : ""}
+
+═══════════════════════════════════════
+ACTION REQUIRED: Please follow up with customer to complete cancellation or retention process.`,
               public: false
             },
             requester: { email: customerEmail, name: customer?.fullName || customerEmail },
@@ -2643,6 +2678,17 @@ ${callTime ? `Best Time to Call: ${callTime}` : ""}`,
 
     if (slackToken && channelId) {
       try {
+        const discountEmoji = request.retentionOfferAccepted === true 
+          ? ":white_check_mark:" 
+          : request.retentionOfferAccepted === false 
+            ? ":x:" 
+            : ":grey_question:";
+        const discountStatusShort = request.retentionOfferAccepted === true 
+          ? "Accepted" 
+          : request.retentionOfferAccepted === false 
+            ? "Declined" 
+            : "N/A";
+
         const slackMessage = {
           channel: channelId,
           text: `:rotating_light: *New Cancellation Request*`,
@@ -2657,9 +2703,16 @@ ${callTime ? `Best Time to Call: ${callTime}` : ""}`,
                 { type: "mrkdwn", text: `*Customer:*\n${customer?.fullName || customerEmail}` },
                 { type: "mrkdwn", text: `*Email:*\n${customerEmail}` },
                 { type: "mrkdwn", text: `*Subscription:*\n${request.subscriptionId}` },
+                { type: "mrkdwn", text: `*Current Price:*\n$${((request.currentPrice || 0) / 100).toFixed(2)}/mo` },
                 { type: "mrkdwn", text: `*Reason:*\n${request.cancellationReason?.replace(/_/g, " ")}` },
-                { type: "mrkdwn", text: `*Contact Method:*\n${contactMethod}` },
-                { type: "mrkdwn", text: `*Zendesk Ticket:*\n${zendeskTicketId ? `#${zendeskTicketId}` : "Failed to create"}` }
+                { type: "mrkdwn", text: `*Discount:* ${discountEmoji}\n${discountStatusShort}` }
+              ]
+            },
+            {
+              type: "section",
+              fields: [
+                { type: "mrkdwn", text: `*Contact Method:*\n${contactMethod === "email" ? "Email" : `Phone: ${phone || "N/A"}`}` },
+                { type: "mrkdwn", text: `*Zendesk Ticket:*\n${zendeskTicketId ? `<https://${zendeskSubdomain}.zendesk.com/agent/tickets/${zendeskTicketId}|#${zendeskTicketId}>` : "Failed to create"}` }
               ]
             },
             {
