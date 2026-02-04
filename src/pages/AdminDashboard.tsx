@@ -123,7 +123,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2" style={{ borderColor: '#10a37f' }}></div>
       </div>
     )
   }
@@ -169,9 +169,10 @@ export default function AdminDashboard() {
                 onClick={() => setFilter(f)}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                   filter === f
-                    ? 'bg-primary text-white'
+                    ? 'text-white border-0'
                     : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                 }`}
+                style={filter === f ? { background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6a 100%)' } : {}}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
                 {f === 'pending' && (
@@ -243,7 +244,8 @@ export default function AdminDashboard() {
                         setSelectedFeedback(item)
                         setResponseText(item.adminResponse || '')
                       }}
-                      className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-accent transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
+                      style={{ background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6a 100%)' }}
                     >
                       {item.adminResponse ? 'Edit Response' : 'Respond'}
                     </button>
@@ -302,7 +304,8 @@ export default function AdminDashboard() {
                 <button
                   onClick={handleRespond}
                   disabled={!responseText.trim() || submitting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-accent transition-colors disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6a 100%)' }}
                 >
                   {submitting ? 'Submitting...' : 'Submit Response'}
                 </button>
