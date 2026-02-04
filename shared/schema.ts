@@ -61,6 +61,18 @@ export const customerFeedback = pgTable("customer_feedback", {
   feedbackType: varchar("feedback_type", { length: 50 }).notNull(),
   message: text("message").notNull(),
   rating: integer("rating"),
+  adminResponse: text("admin_response"),
+  respondedAt: timestamp("responded_at"),
+  respondedBy: varchar("responded_by", { length: 255 }),
+  status: varchar("status", { length: 20 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const adminUsers = pgTable("admin_users", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -118,6 +130,8 @@ export type CustomerFeedback = typeof customerFeedback.$inferSelect;
 export type InsertCustomerFeedback = typeof customerFeedback.$inferInsert;
 export type SlowSpeedSession = typeof slowSpeedSessions.$inferSelect;
 export type InsertSlowSpeedSession = typeof slowSpeedSessions.$inferInsert;
+export type AdminUser = typeof adminUsers.$inferSelect;
+export type InsertAdminUser = typeof adminUsers.$inferInsert;
 
 export const insertCustomerSchema = createInsertSchema(customers);
 export const insertOtpCodeSchema = createInsertSchema(otpCodes);
