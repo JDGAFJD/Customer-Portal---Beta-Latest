@@ -74,7 +74,7 @@ export function CancellationModal({ isOpen, onClose, subscription, token }: Canc
         body: JSON.stringify({
           subscriptionId: subscription.id,
           subscriptionStatus: subscription.status,
-          currentPrice: subscription.planAmount
+          currentPrice: Math.round((subscription.planAmount || 0) * 100)
         })
       })
       const data = await response.json()
