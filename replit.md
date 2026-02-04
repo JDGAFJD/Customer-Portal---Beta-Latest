@@ -38,6 +38,12 @@ The design adheres to official Nomad Internet branding, featuring a modern SaaS 
 - **`app.lrlos.com`**: External webhook for sending OTPs and activation requests.
 
 ## Recent Changes
+- Feb 4, 2026: Customer Feedback Display & Activation Message
+  - Customers can now view their submitted feedback and admin responses in the Overview tab
+  - Added GET /api/feedback endpoint for customers to fetch their own feedback
+  - Feedback section shows feedback type, message, date, and admin response when available
+  - Added "Missing a Subscription?" info box in Overview section
+  - "Activate Device" button opens activatenomad.com in a new tab
 - Feb 4, 2026: Admin Dashboard for Feedback Management
   - New /admin login page for admin users (dark theme, gradient design)
   - Admin dashboard at /admin/dashboard to manage customer feedback
