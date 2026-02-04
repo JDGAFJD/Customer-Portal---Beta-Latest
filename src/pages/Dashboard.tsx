@@ -77,6 +77,17 @@ interface ChargebeeCustomer {
   paymentSources: any[]
 }
 
+interface CustomerFeedback {
+  id: number
+  feedbackType: string
+  message: string
+  rating: number | null
+  adminResponse: string | null
+  respondedAt: string | null
+  status: string | null
+  createdAt: string
+}
+
 interface CombinedOrder {
   source: string
   orderNumber: string
@@ -163,6 +174,7 @@ export default function Dashboard() {
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null)
   const [deviceHelpOpen, setDeviceHelpOpen] = useState<string | null>(null)
   const [showComingSoon, setShowComingSoon] = useState(false)
+  const [customerFeedback, setCustomerFeedback] = useState<CustomerFeedback[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
   const deviceHelpRef = useRef<HTMLDivElement>(null)
 
@@ -210,15 +222,23 @@ export default function Dashboard() {
 
     setIsLoadingData(true)
     try {
-      const response = await fetch('/api/customer/full-data', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const [dataResponse, feedbackResponse] = await Promise.all([
+        fetch('/api/customer/full-data', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/feedback', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ])
 
-      if (response.ok) {
-        const data = await response.json()
+      if (dataResponse.ok) {
+        const data = await dataResponse.json()
         setFullData(data)
+      }
+      
+      if (feedbackResponse.ok) {
+        const feedbackData = await feedbackResponse.json()
+        setCustomerFeedback(feedbackData.feedback || [])
       }
     } catch (error) {
       console.error('Failed to fetch full data:', error)
@@ -609,6 +629,69 @@ void collectibleInvoices.length
                     )}
                   </div>
                 </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="font-medium text-blue-800">Missing a Subscription?</span>
+                      </div>
+                      <p className="text-sm text-blue-700">
+                        If you don't see a subscription associated with your device, you can activate it through our activation portal.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => window.open('https://activatenomad.com', '_blank')}
+                      className="flex-shrink-0 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
+                      style={{ background: 'linear-gradient(135deg, #10a37f 0%, #0d8a6a 100%)' }}
+                    >
+                      Activate Device
+                    </button>
+                  </div>
+                </div>
+
+                {customerFeedback.length > 0 && (
+                  <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold text-text mb-4">Your Feedback</h3>
+                    <div className="space-y-4">
+                      {customerFeedback.map((feedback) => (
+                        <div key={feedback.id} className="border border-gray-100 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                              feedback.feedbackType === 'feature_request' ? 'bg-blue-100 text-blue-700' :
+                              feedback.feedbackType === 'bug_report' ? 'bg-red-100 text-red-700' :
+                              feedback.feedbackType === 'compliment' ? 'bg-green-100 text-green-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {feedback.feedbackType.replace('_', ' ')}
+                            </span>
+                            <span className="text-xs text-muted">
+                              {new Date(feedback.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-text mb-3">{feedback.message}</p>
+                          
+                          {feedback.adminResponse ? (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <p className="text-xs text-green-600 mb-1 font-medium">Response from Nomad Internet:</p>
+                              <p className="text-sm text-green-800">{feedback.adminResponse}</p>
+                              {feedback.respondedAt && (
+                                <p className="text-xs text-green-600 mt-2">
+                                  Responded on {new Date(feedback.respondedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted italic">Awaiting response...</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

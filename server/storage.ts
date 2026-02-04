@@ -25,6 +25,7 @@ export interface IStorage {
   getEscalationByTicketId(ticketId: string): Promise<EscalationTicket | undefined>;
   
   createFeedback(feedback: InsertCustomerFeedback): Promise<CustomerFeedback>;
+  getFeedbackByCustomer(customerEmail: string): Promise<CustomerFeedback[]>;
   
   createSlowSpeedSession(session: InsertSlowSpeedSession): Promise<SlowSpeedSession>;
   getSlowSpeedSession(id: number): Promise<SlowSpeedSession | undefined>;
@@ -179,6 +180,12 @@ export class DatabaseStorage implements IStorage {
   async createFeedback(feedback: InsertCustomerFeedback): Promise<CustomerFeedback> {
     const [newFeedback] = await db.insert(customerFeedback).values(feedback).returning();
     return newFeedback;
+  }
+
+  async getFeedbackByCustomer(customerEmail: string): Promise<CustomerFeedback[]> {
+    return await db.select().from(customerFeedback)
+      .where(eq(customerFeedback.customerEmail, customerEmail.toLowerCase()))
+      .orderBy(desc(customerFeedback.createdAt));
   }
 
   async createSlowSpeedSession(session: InsertSlowSpeedSession): Promise<SlowSpeedSession> {

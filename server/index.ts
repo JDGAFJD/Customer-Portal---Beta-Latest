@@ -1589,6 +1589,41 @@ app.post("/api/feedback", async (req, res) => {
   }
 });
 
+app.get("/api/feedback", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    const session = await storage.getSessionByToken(token);
+    let customerEmail = "";
+
+    if (session) {
+      const customer = await storage.getCustomer(session.customerId);
+      customerEmail = customer?.email || "";
+    } else {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        if (decoded.isTest) {
+          customerEmail = decoded.email || "test@example.com";
+        } else {
+          return res.status(401).json({ error: "Invalid session" });
+        }
+      } catch {
+        return res.status(401).json({ error: "Invalid session" });
+      }
+    }
+
+    const feedback = await storage.getFeedbackByCustomer(customerEmail);
+    
+    res.json({ feedback });
+  } catch (error: any) {
+    console.error("Get feedback error:", error);
+    res.status(500).json({ error: error.message || "Failed to get feedback" });
+  }
+});
+
 app.post("/api/slow-speed/check-eligibility", async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
