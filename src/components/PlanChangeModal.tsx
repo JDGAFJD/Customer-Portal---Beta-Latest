@@ -359,7 +359,7 @@ export function PlanChangeModal({ isOpen, onClose, subscription, customerEmail, 
                       <div>
                         <p className="text-xs text-muted uppercase tracking-wide">Current Plan</p>
                         <p className="font-medium text-text">{subscription.planName || subscription.planId}</p>
-                        <p className="text-sm" style={{ color: '#10a37f' }}>${(subscription.planAmount / 100).toFixed(2)}/mo</p>
+                        <p className="text-sm" style={{ color: '#10a37f' }}>${subscription.planAmount.toFixed(2)}/mo</p>
                       </div>
                       <div className="text-gray-400">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
