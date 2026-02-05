@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { storage } from "./storage";
-import { fetchCustomerFullData } from "./services";
+import { fetchCustomerFullData, fetchChargebeeCatalogItems, fetchChargebeeItemPrices } from "./services";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -3545,6 +3545,71 @@ app.post("/api/admin/seed", async (req, res) => {
   } catch (error: any) {
     console.error("Seed admin error:", error);
     res.status(500).json({ error: error.message || "Failed to seed admin" });
+  }
+});
+
+// Fetch all Chargebee catalog items (plans and add-ons including archived)
+app.get("/api/admin/chargebee-catalog", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { adminId: number };
+    if (!decoded.adminId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Fetch items and item prices in parallel
+    const [itemsResult, pricesResult] = await Promise.all([
+      fetchChargebeeCatalogItems(),
+      fetchChargebeeItemPrices()
+    ]);
+
+    if (!itemsResult.success) {
+      return res.status(500).json({ error: itemsResult.error });
+    }
+
+    if (!pricesResult.success) {
+      return res.status(500).json({ error: pricesResult.error });
+    }
+
+    // Generate planNames map format
+    const planNamesMap: Record<string, string> = {};
+    
+    // Add items
+    if (itemsResult.items) {
+      for (const item of itemsResult.items) {
+        planNamesMap[item.id] = item.name;
+      }
+    }
+    
+    // Add item prices (these are what subscriptions actually reference)
+    if (pricesResult.itemPrices) {
+      for (const price of pricesResult.itemPrices) {
+        // Store with full price ID
+        planNamesMap[price.id] = price.name;
+        // Also store without currency/period suffix for flexible matching
+        const baseId = price.id.replace(/-USD-(Monthly|Yearly|Annual|Weekly|Daily)$/i, '');
+        if (!planNamesMap[baseId]) {
+          planNamesMap[baseId] = price.name;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      items: itemsResult.items,
+      itemPrices: pricesResult.itemPrices,
+      planNamesMap,
+      totalItems: itemsResult.items?.length || 0,
+      totalItemPrices: pricesResult.itemPrices?.length || 0
+    });
+  } catch (error: any) {
+    console.error("Fetch Chargebee catalog error:", error);
+    res.status(500).json({ error: error.message || "Failed to fetch catalog" });
   }
 });
 

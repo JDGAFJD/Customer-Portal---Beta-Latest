@@ -1634,3 +1634,187 @@ export async function changeDevicePlan(
     return { success: false, error: error.message || 'Failed to change plan' };
   }
 }
+
+// Fetch all items from Chargebee catalog (plans and add-ons), including archived
+export async function fetchChargebeeCatalogItems(): Promise<{
+  success: boolean;
+  items?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    status: string;
+    description?: string;
+  }>;
+  error?: string;
+}> {
+  if (!CHARGEBEE_API_KEY || !CHARGEBEE_SITE) {
+    return { success: false, error: 'Chargebee credentials not configured' };
+  }
+
+  try {
+    const credentials = Buffer.from(`${CHARGEBEE_API_KEY}:`).toString('base64');
+    const allItems: Array<{
+      id: string;
+      name: string;
+      type: string;
+      status: string;
+      description?: string;
+    }> = [];
+    
+    let offset: string | undefined;
+    let hasMore = true;
+    
+    // Fetch all items including archived (status[in] includes active and archived)
+    while (hasMore) {
+      const params = new URLSearchParams();
+      params.append('limit', '100');
+      params.append('status[in]', '["active","archived"]');
+      if (offset) {
+        params.append('offset', offset);
+      }
+      
+      const response = await fetch(
+        `https://${CHARGEBEE_SITE}.chargebee.com/api/v2/items?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Chargebee items API error:', errorText);
+        return { success: false, error: `Failed to fetch items: ${response.status}` };
+      }
+      
+      const data = await response.json();
+      
+      if (data.list && Array.isArray(data.list)) {
+        for (const entry of data.list) {
+          if (entry.item) {
+            allItems.push({
+              id: entry.item.id,
+              name: entry.item.name || entry.item.id,
+              type: entry.item.type || 'unknown',
+              status: entry.item.status || 'unknown',
+              description: entry.item.description
+            });
+          }
+        }
+      }
+      
+      if (data.next_offset) {
+        offset = data.next_offset;
+      } else {
+        hasMore = false;
+      }
+    }
+    
+    console.log(`Fetched ${allItems.length} items from Chargebee catalog`);
+    return { success: true, items: allItems };
+  } catch (error: any) {
+    console.error('Error fetching Chargebee catalog items:', error);
+    return { success: false, error: error.message || 'Failed to fetch catalog items' };
+  }
+}
+
+// Fetch all item prices from Chargebee catalog, including archived
+export async function fetchChargebeeItemPrices(): Promise<{
+  success: boolean;
+  itemPrices?: Array<{
+    id: string;
+    name: string;
+    itemId: string;
+    itemType: string;
+    status: string;
+    price: number;
+    currencyCode: string;
+    period?: number;
+    periodUnit?: string;
+  }>;
+  error?: string;
+}> {
+  if (!CHARGEBEE_API_KEY || !CHARGEBEE_SITE) {
+    return { success: false, error: 'Chargebee credentials not configured' };
+  }
+
+  try {
+    const credentials = Buffer.from(`${CHARGEBEE_API_KEY}:`).toString('base64');
+    const allItemPrices: Array<{
+      id: string;
+      name: string;
+      itemId: string;
+      itemType: string;
+      status: string;
+      price: number;
+      currencyCode: string;
+      period?: number;
+      periodUnit?: string;
+    }> = [];
+    
+    let offset: string | undefined;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const params = new URLSearchParams();
+      params.append('limit', '100');
+      params.append('status[in]', '["active","archived"]');
+      if (offset) {
+        params.append('offset', offset);
+      }
+      
+      const response = await fetch(
+        `https://${CHARGEBEE_SITE}.chargebee.com/api/v2/item_prices?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Chargebee item_prices API error:', errorText);
+        return { success: false, error: `Failed to fetch item prices: ${response.status}` };
+      }
+      
+      const data = await response.json();
+      
+      if (data.list && Array.isArray(data.list)) {
+        for (const entry of data.list) {
+          if (entry.item_price) {
+            const ip = entry.item_price;
+            allItemPrices.push({
+              id: ip.id,
+              name: ip.name || ip.external_name || ip.id,
+              itemId: ip.item_id,
+              itemType: ip.item_type || 'unknown',
+              status: ip.status || 'unknown',
+              price: ip.price || 0,
+              currencyCode: ip.currency_code || 'USD',
+              period: ip.period,
+              periodUnit: ip.period_unit
+            });
+          }
+        }
+      }
+      
+      if (data.next_offset) {
+        offset = data.next_offset;
+      } else {
+        hasMore = false;
+      }
+    }
+    
+    console.log(`Fetched ${allItemPrices.length} item prices from Chargebee catalog`);
+    return { success: true, itemPrices: allItemPrices };
+  } catch (error: any) {
+    console.error('Error fetching Chargebee item prices:', error);
+    return { success: false, error: error.message || 'Failed to fetch item prices' };
+  }
+}
