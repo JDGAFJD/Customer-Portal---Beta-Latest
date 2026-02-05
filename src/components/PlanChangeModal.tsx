@@ -223,7 +223,7 @@ export function PlanChangeModal({ isOpen, onClose, subscription, customerEmail, 
                 {step === 'confirm' && 'Confirm Plan Change'}
                 {step === 'processing' && 'Processing...'}
                 {step === 'verifying' && 'Verifying Plan Change'}
-                {step === 'success' && 'Request Submitted'}
+                {step === 'success' && 'Plan Updated'}
                 {step === 'partial_success' && 'Plan Change Scheduled'}
               </h2>
               <p className="text-white/80 text-sm mt-1">
@@ -231,7 +231,7 @@ export function PlanChangeModal({ isOpen, onClose, subscription, customerEmail, 
                 {step === 'confirm' && 'Review your plan change request'}
                 {step === 'processing' && 'Updating your subscription...'}
                 {step === 'verifying' && 'Confirming your new network speed'}
-                {step === 'success' && 'Our team will process your request'}
+                {step === 'success' && 'Your billing has been updated'}
                 {step === 'partial_success' && 'Billing updated, network change in progress'}
               </p>
             </div>
@@ -385,9 +385,9 @@ export function PlanChangeModal({ isOpen, onClose, subscription, customerEmail, 
                         <div>
                           <p className="text-sm text-blue-800 font-medium">What happens next</p>
                           <ul className="text-sm text-blue-700 mt-1 space-y-1">
-                            <li>• Our team will review and process your request</li>
-                            <li>• You will receive confirmation within 24 hours</li>
-                            <li>• Changes will take effect on your next billing cycle</li>
+                            <li>• Your billing will be updated immediately</li>
+                            <li>• New rate takes effect on your next billing cycle</li>
+                            <li>• Network speed change may take up to 24 hours</li>
                           </ul>
                         </div>
                       </div>
@@ -490,13 +490,13 @@ export function PlanChangeModal({ isOpen, onClose, subscription, customerEmail, 
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </motion.div>
-                <h3 className="text-xl font-bold text-text mb-2">Request Submitted!</h3>
+                <h3 className="text-xl font-bold text-text mb-2">Plan Updated!</h3>
                 <p className="text-muted mb-6 max-w-md mx-auto">
-                  Your plan change request has been submitted successfully. Our team will process your request within 24 hours.
+                  Your billing has been updated. The new rate will take effect on your next billing cycle.
                 </p>
                 {selectedPlan && (
                   <div className="inline-block bg-gray-50 rounded-lg px-6 py-3">
-                    <p className="text-sm text-muted">Requested Plan</p>
+                    <p className="text-sm text-muted">New Plan</p>
                     <p className="font-semibold text-text">{selectedPlan.name}</p>
                     <p className="text-sm" style={{ color: '#10a37f' }}>${selectedPlan.price.toFixed(2)}/mo • {selectedPlan.speedMbps} Mbps</p>
                   </div>

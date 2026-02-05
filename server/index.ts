@@ -2402,21 +2402,47 @@ app.post("/api/plan-change-request", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Send Slack notification for manual processing
+    // Step 1: Update the subscription in Chargebee
+    const { scheduleSubscriptionPlanChange, addChargebeeCustomerComment } = await import('./services');
+    const chargebeeResult = await scheduleSubscriptionPlanChange(subscriptionId, requestedPlanId);
+    
+    if (!chargebeeResult.success) {
+      console.error('Chargebee plan change failed:', chargebeeResult.error);
+      return res.status(500).json({ error: chargebeeResult.error || 'Failed to update subscription in Chargebee' });
+    }
+    
+    console.log(`Chargebee subscription ${subscriptionId} updated to ${requestedPlanId}`);
+    
+    // Add a comment to the Chargebee customer profile
+    if (chargebeeCustomerId) {
+      const commentText = `Plan change via Customer Portal: ${currentPlanName || currentPlanId} → ${requestedPlanName || requestedPlanId}. Billing updated. ThingSpace update pending.`;
+      await addChargebeeCustomerComment(chargebeeCustomerId, commentText);
+    }
+
+    // Step 2: Send Slack notification to update ThingSpace manually
     const slackToken = process.env.SLACK_BOT_TOKEN;
     if (slackToken) {
-      const targetChannel = "U05HMJ0JG79";
+      const targetUser = "U05HMJ0JG79";
       const priceDiff = ((requestedPrice || 0) / 100) - (currentPrice || 0);
       const priceChangeText = priceDiff > 0 
         ? `Upgrade (+$${priceDiff.toFixed(2)}/mo)` 
         : priceDiff < 0 
         ? `Downgrade (-$${Math.abs(priceDiff).toFixed(2)}/mo)` 
         : 'Same price';
+      
+      // Determine ThingSpace plan based on requested plan
+      const thingspacePlan = requestedPlanId?.toLowerCase().includes('travel') 
+        ? '200 Mbps (59145x48526x84777)' 
+        : '100 Mbps (59142x48526x84777)';
 
       const blocks = [
         {
           type: "header",
-          text: { type: "plain_text", text: "📋 Plan Change Request", emoji: true }
+          text: { type: "plain_text", text: "📋 ThingSpace Update Required", emoji: true }
+        },
+        {
+          type: "section",
+          text: { type: "mrkdwn", text: "*Chargebee has been updated.* Please update ThingSpace to match." }
         },
         {
           type: "section",
@@ -2424,27 +2450,27 @@ app.post("/api/plan-change-request", async (req, res) => {
             { type: "mrkdwn", text: `*Customer:*\n${customerName || customerEmail}` },
             { type: "mrkdwn", text: `*Email:*\n${customerEmail}` },
             { type: "mrkdwn", text: `*Subscription ID:*\n${subscriptionId}` },
-            { type: "mrkdwn", text: `*Chargebee Customer:*\n${chargebeeCustomerId || 'N/A'}` }
+            { type: "mrkdwn", text: `*Change Type:*\n${priceChangeText}` }
           ]
         },
         {
           type: "section",
           fields: [
-            { type: "mrkdwn", text: `*Current Plan:*\n${currentPlanName || currentPlanId}\n$${(currentPrice || 0).toFixed(2)}/mo` },
-            { type: "mrkdwn", text: `*Requested Plan:*\n${requestedPlanName || requestedPlanId}\n$${((requestedPrice || 0) / 100).toFixed(2)}/mo` }
+            { type: "mrkdwn", text: `*From Plan:*\n${currentPlanName || currentPlanId}` },
+            { type: "mrkdwn", text: `*To Plan:*\n${requestedPlanName || requestedPlanId}` }
           ]
         },
         {
           type: "section",
           fields: [
             { type: "mrkdwn", text: `*ICCID:*\n${iccid || 'N/A'}` },
-            { type: "mrkdwn", text: `*Change Type:*\n${priceChangeText}` }
+            { type: "mrkdwn", text: `*ThingSpace Plan:*\n${thingspacePlan}` }
           ]
         },
         {
           type: "context",
           elements: [
-            { type: "mrkdwn", text: `Submitted via Customer Portal on ${new Date().toLocaleString()}` }
+            { type: "mrkdwn", text: `Billing effective: ${chargebeeResult.nextBillingDate ? new Date(chargebeeResult.nextBillingDate).toLocaleDateString() : 'Next billing cycle'}` }
           ]
         }
       ];
@@ -2457,9 +2483,9 @@ app.post("/api/plan-change-request", async (req, res) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            channel: targetChannel,
+            channel: targetUser,
             blocks,
-            text: `Plan change request from ${customerName || customerEmail}`
+            text: `ThingSpace update required for ${customerName || customerEmail}`
           })
         });
         console.log(`Plan change Slack notification sent for ${customerEmail}`);
@@ -2470,7 +2496,8 @@ app.post("/api/plan-change-request", async (req, res) => {
 
     res.json({
       success: true,
-      message: "Your plan change request has been submitted. Our team will process it within 24 hours."
+      message: "Your plan has been updated. The change will take effect on your next billing cycle.",
+      nextBillingDate: chargebeeResult.nextBillingDate
     });
   } catch (error: any) {
     console.error("Plan change request error:", error);

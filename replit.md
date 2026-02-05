@@ -38,11 +38,15 @@ The design adheres to official Nomad Internet branding, featuring a modern SaaS 
 - **`app.lrlos.com`**: External webhook for sending OTPs and activation requests.
 
 ## Recent Changes
-- Feb 5, 2026: Plan Change Request Feature (Slack Notification Only)
+- Feb 5, 2026: Plan Change Feature (Chargebee Auto-Update + Slack ThingSpace Notification)
   - "Change Plan" button visible for subscriptions with device info (ICCID, IMEI, or MDN)
-  - Submitting request sends Slack notification to channel C09DACN82VD with request details
-  - Customer sees "Request Submitted" confirmation with 24-hour processing message
-  - Manual processing by team - no automated Chargebee or ThingSpace changes
+  - Only shows the opposite speed tier (100 Mbps ↔ 200 Mbps)
+  - Submitting a plan change:
+    1. Automatically updates Chargebee subscription (end_of_term, new rate at next billing cycle)
+    2. Adds comment to Chargebee customer profile documenting the change
+    3. Sends Slack DM to U05HMJ0JG79 with ThingSpace update instructions (plan ID included)
+  - Customer sees "Plan Updated!" confirmation with new billing info
+  - ThingSpace plan mapping: Residential → 100 Mbps (59142x48526x84777), Travel → 200 Mbps (59145x48526x84777)
   - API endpoint: POST /api/plan-change-request
   - Database table `plan_change_verifications` exists but is currently unused
 - Feb 4, 2026: Cancellation & Retention Flow
