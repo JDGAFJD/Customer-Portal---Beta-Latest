@@ -42,12 +42,13 @@ The design adheres to official Nomad Internet branding, featuring a modern SaaS 
   - Full automation: Chargebee billing update + ThingSpace network speed change
   - Chargebee subscription update with end_of_term=true (billing changes at next cycle)
   - Chargebee customer profile comment documenting the change (who, what, when)
-  - ThingSpace API integration for immediate network speed change
+  - ThingSpace API integration for immediate network speed change (when MDN available)
   - Plan mapping: Residential → 100 Mbps (59142x48526x84777), Travel → 200 Mbps (59145x48526x84777)
   - 5-minute verification: checks ThingSpace device status to confirm plan changed
   - Live countdown timer on portal while verifying plan change
   - Slack notifications on ThingSpace failure or verification mismatch
-  - "Change Plan" button only visible for subscriptions with MDN (device required)
+  - "Change Plan" button visible for subscriptions with device info (ICCID, IMEI, or MDN)
+  - No MDN handling: Chargebee billing updated, Slack notification sent for manual network update
   - Database table: `plan_change_verifications` tracks full change lifecycle
   - API endpoints: POST /api/plan-change-request, GET /api/plan-change-status/:id
 - Feb 4, 2026: Plan Change Request Feature (superseded by Feb 5 automation)
