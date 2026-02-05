@@ -115,6 +115,35 @@ export const cancellationRequests = pgTable("cancellation_requests", {
   completedAt: timestamp("completed_at"),
 });
 
+export const planChangeVerifications = pgTable("plan_change_verifications", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").references(() => customers.id),
+  customerEmail: varchar("customer_email", { length: 255 }).notNull(),
+  subscriptionId: varchar("subscription_id", { length: 255 }).notNull(),
+  chargebeeCustomerId: varchar("chargebee_customer_id", { length: 255 }),
+  mdn: varchar("mdn", { length: 20 }),
+  iccid: varchar("iccid", { length: 50 }),
+  currentPlanId: varchar("current_plan_id", { length: 255 }).notNull(),
+  currentPlanName: varchar("current_plan_name", { length: 255 }),
+  currentPrice: integer("current_price"),
+  requestedPlanId: varchar("requested_plan_id", { length: 255 }).notNull(),
+  requestedPlanName: varchar("requested_plan_name", { length: 255 }),
+  requestedPrice: integer("requested_price"),
+  thingspacePlanCode: varchar("thingspace_plan_code", { length: 100 }),
+  chargebeeUpdated: boolean("chargebee_updated").default(false),
+  chargebeeNextBillingDate: timestamp("chargebee_next_billing_date"),
+  thingspaceRequested: boolean("thingspace_requested").default(false),
+  thingspaceRequestId: varchar("thingspace_request_id", { length: 100 }),
+  verificationScheduledAt: timestamp("verification_scheduled_at"),
+  verificationCompletedAt: timestamp("verification_completed_at"),
+  verificationStatus: varchar("verification_status", { length: 50 }).default("pending"),
+  verificationError: text("verification_error"),
+  slackNotificationSent: boolean("slack_notification_sent").default(false),
+  status: varchar("status", { length: 50 }).default("processing"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const slowSpeedSessions = pgTable("slow_speed_sessions", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").references(() => customers.id),
@@ -175,6 +204,8 @@ export type PortalSetting = typeof portalSettings.$inferSelect;
 export type InsertPortalSetting = typeof portalSettings.$inferInsert;
 export type CancellationRequest = typeof cancellationRequests.$inferSelect;
 export type InsertCancellationRequest = typeof cancellationRequests.$inferInsert;
+export type PlanChangeVerification = typeof planChangeVerifications.$inferSelect;
+export type InsertPlanChangeVerification = typeof planChangeVerifications.$inferInsert;
 
 export const insertCustomerSchema = createInsertSchema(customers);
 export const insertOtpCodeSchema = createInsertSchema(otpCodes);

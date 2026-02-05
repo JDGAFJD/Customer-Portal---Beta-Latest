@@ -1464,6 +1464,108 @@ export interface ChangePlanResult {
   requestId?: string;
 }
 
+export interface ScheduleSubscriptionChangeResult {
+  success: boolean;
+  error?: string;
+  nextBillingDate?: string;
+  subscriptionId?: string;
+}
+
+export async function scheduleSubscriptionPlanChange(
+  subscriptionId: string,
+  newPlanId: string
+): Promise<ScheduleSubscriptionChangeResult> {
+  if (!CHARGEBEE_API_KEY || !CHARGEBEE_SITE) {
+    return { success: false, error: 'Chargebee not configured' };
+  }
+  
+  try {
+    const credentials = Buffer.from(`${CHARGEBEE_API_KEY}:`).toString('base64');
+    const formData = new URLSearchParams();
+    formData.append('plan_id', newPlanId);
+    formData.append('end_of_term', 'true');
+    
+    const response = await fetch(`https://${CHARGEBEE_SITE}.chargebee.com/api/v2/subscriptions/${subscriptionId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString()
+    });
+    
+    const responseText = await response.text();
+    console.log('Chargebee subscription update response:', response.status);
+    
+    if (!response.ok) {
+      let errorMessage = `Chargebee API error: ${response.status}`;
+      try {
+        const errorData = JSON.parse(responseText);
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch {}
+      return { success: false, error: errorMessage };
+    }
+    
+    const data = JSON.parse(responseText);
+    const nextBillingDate = data.subscription?.current_term_end 
+      ? new Date(data.subscription.current_term_end * 1000).toISOString()
+      : undefined;
+    
+    return { 
+      success: true, 
+      subscriptionId: data.subscription?.id,
+      nextBillingDate
+    };
+  } catch (error: any) {
+    console.error('Error scheduling subscription plan change:', error);
+    return { success: false, error: error.message || 'Failed to schedule plan change' };
+  }
+}
+
+export interface AddCommentResult {
+  success: boolean;
+  error?: string;
+}
+
+export async function addChargebeeCustomerComment(
+  customerId: string,
+  comment: string
+): Promise<AddCommentResult> {
+  if (!CHARGEBEE_API_KEY || !CHARGEBEE_SITE) {
+    return { success: false, error: 'Chargebee not configured' };
+  }
+  
+  try {
+    const credentials = Buffer.from(`${CHARGEBEE_API_KEY}:`).toString('base64');
+    const formData = new URLSearchParams();
+    formData.append('entity_type', 'customer');
+    formData.append('entity_id', customerId);
+    formData.append('notes', comment);
+    
+    const response = await fetch(`https://${CHARGEBEE_SITE}.chargebee.com/api/v2/comments`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString()
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Chargebee comment error:', errorText);
+      return { success: false, error: `Failed to add comment: ${response.status}` };
+    }
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error adding Chargebee comment:', error);
+    return { success: false, error: error.message || 'Failed to add comment' };
+  }
+}
+
 export async function changeDevicePlan(
   identifier: string, 
   identifierType: 'iccid' | 'imei' | 'mdn',
