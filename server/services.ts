@@ -1331,23 +1331,13 @@ export async function addTravelAddonToSubscription(subscriptionId: string): Prom
   try {
     const travelAddonItemPriceId = 'Nomad-Travel-Upgrade-1000-USD-Monthly';
 
-    const subData = await chargebeeApiGet(`/subscriptions/${subscriptionId}`);
-    if (!subData?.subscription) {
-      return { success: false, error: 'Subscription not found' };
-    }
-
-    const existingItems = subData.subscription.subscription_items || [];
     const params: Record<string, string> = {
+      'subscription_items[item_price_id][0]': travelAddonItemPriceId,
+      'subscription_items[quantity][0]': '1',
+      'replace_items_list': 'false',
       'invoice_immediately': 'true',
       'prorate': 'true',
     };
-    existingItems.forEach((item: any, index: number) => {
-      params[`subscription_items[item_price_id][${index}]`] = item.item_price_id;
-      params[`subscription_items[quantity][${index}]`] = String(item.quantity || 1);
-    });
-    const newIndex = existingItems.length;
-    params[`subscription_items[item_price_id][${newIndex}]`] = travelAddonItemPriceId;
-    params[`subscription_items[quantity][${newIndex}]`] = '1';
 
     const result = await chargebeeApiPost(
       `/subscriptions/${subscriptionId}/update_subscription_for_items`,
