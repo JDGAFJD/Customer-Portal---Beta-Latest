@@ -1340,7 +1340,7 @@ export async function addTravelAddonToSubscription(subscriptionId: string): Prom
     };
 
     const result = await chargebeeApiPost(
-      `/subscriptions/${subscriptionId}/update_subscription_for_items`,
+      `/subscriptions/${subscriptionId}/update_for_items`,
       params
     );
 
