@@ -1,4 +1,4 @@
-import { customers, otpCodes, sessions, escalationTickets, customerFeedback, slowSpeedSessions, adminUsers, portalSettings, cancellationRequests, planChangeVerifications, type Customer, type InsertCustomer, type OtpCode, type InsertOtpCode, type Session, type InsertSession, type EscalationTicket, type InsertEscalationTicket, type CustomerFeedback, type InsertCustomerFeedback, type SlowSpeedSession, type InsertSlowSpeedSession, type AdminUser, type InsertAdminUser, type PortalSetting, type InsertPortalSetting, type CancellationRequest, type InsertCancellationRequest, type PlanChangeVerification, type InsertPlanChangeVerification } from "../shared/schema";
+import { customers, otpCodes, sessions, escalationTickets, customerFeedback, slowSpeedSessions, adminUsers, portalSettings, cancellationRequests, type Customer, type InsertCustomer, type OtpCode, type InsertOtpCode, type Session, type InsertSession, type EscalationTicket, type InsertEscalationTicket, type CustomerFeedback, type InsertCustomerFeedback, type SlowSpeedSession, type InsertSlowSpeedSession, type AdminUser, type InsertAdminUser, type PortalSetting, type InsertPortalSetting, type CancellationRequest, type InsertCancellationRequest } from "../shared/schema";
 import { db } from "./db";
 import { eq, and, gt, or, desc } from "drizzle-orm";
 
@@ -47,11 +47,6 @@ export interface IStorage {
   getCancellationRequestsByCustomer(customerEmail: string): Promise<CancellationRequest[]>;
   checkRecentDiscountForSubscription(subscriptionId: string): Promise<boolean>;
   getAllCancellationRequests(): Promise<CancellationRequest[]>;
-  
-  createPlanChangeVerification(verification: InsertPlanChangeVerification): Promise<PlanChangeVerification>;
-  getPlanChangeVerification(id: number): Promise<PlanChangeVerification | undefined>;
-  updatePlanChangeVerification(id: number, data: Partial<InsertPlanChangeVerification>): Promise<PlanChangeVerification | undefined>;
-  getPendingVerifications(): Promise<PlanChangeVerification[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -352,38 +347,6 @@ export class DatabaseStorage implements IStorage {
 
   async getAllCancellationRequests(): Promise<CancellationRequest[]> {
     return await db.select().from(cancellationRequests).orderBy(desc(cancellationRequests.createdAt));
-  }
-  
-  async createPlanChangeVerification(verification: InsertPlanChangeVerification): Promise<PlanChangeVerification> {
-    const [created] = await db.insert(planChangeVerifications).values(verification).returning();
-    return created;
-  }
-
-  async getPlanChangeVerification(id: number): Promise<PlanChangeVerification | undefined> {
-    const [verification] = await db.select().from(planChangeVerifications).where(eq(planChangeVerifications.id, id));
-    return verification || undefined;
-  }
-
-  async updatePlanChangeVerification(id: number, data: Partial<InsertPlanChangeVerification>): Promise<PlanChangeVerification | undefined> {
-    const [updated] = await db
-      .update(planChangeVerifications)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(planChangeVerifications.id, id))
-      .returning();
-    return updated || undefined;
-  }
-
-  async getPendingVerifications(): Promise<PlanChangeVerification[]> {
-    const now = new Date();
-    return db
-      .select()
-      .from(planChangeVerifications)
-      .where(
-        and(
-          eq(planChangeVerifications.verificationStatus, 'pending'),
-          eq(planChangeVerifications.thingspaceRequested, true)
-        )
-      );
   }
 }
 

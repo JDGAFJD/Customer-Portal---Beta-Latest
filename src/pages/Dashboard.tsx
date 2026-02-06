@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom'
 import { ChatWidget } from '../components/ChatWidget'
 import { FeedbackButton } from '../components/FeedbackButton'
 import { CancellationModal } from '../components/CancellationModal'
-import { PlanChangeModal } from '../components/PlanChangeModal'
 import { getPlanDisplayName } from '../utils/planNames'
 
 interface Customer {
@@ -194,9 +193,6 @@ export default function Dashboard() {
   const [subscriptionForHistory, setSubscriptionForHistory] = useState<string | null>(null)
   const [cancellationHistory, setCancellationHistory] = useState<any[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
-  const [planChangeModalOpen, setPlanChangeModalOpen] = useState(false)
-  const [subscriptionForPlanChange, setSubscriptionForPlanChange] = useState<ChargebeeSubscription | null>(null)
-  const [customerForPlanChange, setCustomerForPlanChange] = useState<{ email: string; name: string } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const deviceHelpRef = useRef<HTMLDivElement>(null)
 
@@ -873,18 +869,6 @@ void collectibleInvoices.length
                               </button>
                               {(sub.status === 'active' || sub.status === 'paused' || sub.status === 'in_trial') && (
                                 <>
-                                  {(sub.mdn || sub.iccid || sub.imei) && (
-                                    <button
-                                      onClick={() => {
-                                        alert('This feature is under development. Please check back soon!')
-                                      }}
-                                      className="px-4 py-2 text-sm font-medium border rounded-lg transition-all hover:shadow-md"
-                                      style={{ color: '#10a37f', borderColor: '#10a37f' }}
-                                      title="Change your plan and network speed"
-                                    >
-                                      Change Plan
-                                    </button>
-                                  )}
                                   <button
                                     onClick={() => {
                                       setSubscriptionToCancel(sub)
@@ -1600,21 +1584,6 @@ void collectibleInvoices.length
             setSubscriptionToCancel(null)
           }}
           subscription={subscriptionToCancel}
-          token={authToken}
-        />
-      )}
-
-      {authToken && subscriptionForPlanChange && customerForPlanChange && (
-        <PlanChangeModal
-          isOpen={planChangeModalOpen}
-          onClose={() => {
-            setPlanChangeModalOpen(false)
-            setSubscriptionForPlanChange(null)
-            setCustomerForPlanChange(null)
-          }}
-          subscription={subscriptionForPlanChange}
-          customerEmail={customerForPlanChange.email}
-          customerName={customerForPlanChange.name}
           token={authToken}
         />
       )}

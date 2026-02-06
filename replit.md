@@ -25,7 +25,7 @@ The design adheres to official Nomad Internet branding, featuring a modern SaaS 
 - **Sign-In Methods**: Password-based and OTP (passwordless) authentication.
 - **Forgot Password Flow**: Email-based OTP verification, secure reset token issuance, new password creation.
 - **Account Management**: Users can update their name, password, and phone number (with OTP verification).
-- **Dashboard**: Centralized view with tabs for Overview, Subscriptions (hierarchical view for multiple customers), Orders (combined Shopify/Shipstation data), Invoices (with payment options), and Internet (device status, plan changes, troubleshooting).
+- **Dashboard**: Centralized view with tabs for Overview, Subscriptions (hierarchical view for multiple customers), Orders (combined Shopify/Shipstation data), Invoices (with payment options), and Internet (device status, troubleshooting).
 - **Troubleshooting**: Automated line status checks, suspended line auto-restoration, escalation to support with ticket tracking, and issue-specific guidance for active lines.
 
 ## External Dependencies
@@ -46,17 +46,11 @@ The design adheres to official Nomad Internet branding, featuring a modern SaaS 
   - Table displays: date, customer, subscription, MRR ($), reason, discount acceptance, status, Zendesk ticket link
   - API endpoints: GET /api/admin/cancellations, GET /api/admin/cancellations/export
   - Uses existing `cancellation_requests` table data
-- Feb 5, 2026: Plan Change Feature (Chargebee Auto-Update + Slack ThingSpace Notification)
-  - "Change Plan" button visible for subscriptions with device info (ICCID, IMEI, or MDN)
-  - Only shows the opposite speed tier (100 Mbps ↔ 200 Mbps)
-  - Submitting a plan change:
-    1. Automatically updates Chargebee subscription (end_of_term, new rate at next billing cycle)
-    2. Adds comment to Chargebee customer profile documenting the change
-    3. Sends Slack DM to U05HMJ0JG79 with ThingSpace update instructions (plan ID included)
-  - Customer sees "Plan Updated!" confirmation with new billing info
-  - ThingSpace plan mapping: Residential → 100 Mbps (59142x48526x84777), Travel → 200 Mbps (59145x48526x84777)
-  - API endpoint: POST /api/plan-change-request
-  - Database table `plan_change_verifications` exists but is currently unused
+- Feb 6, 2026: Removed Plan Change Feature
+  - Removed "Change Plan" button, PlanChangeModal component, and all related backend endpoints
+  - Removed API endpoints: POST /api/plan-change-request, GET /api/plan-change-status, POST /api/device/change-plan
+  - Removed service functions: scheduleSubscriptionPlanChange, changeDevicePlan
+  - Database table `plan_change_verifications` still exists but is no longer used
 - Feb 4, 2026: Cancellation & Retention Flow
   - Multi-step cancellation modal with reason selection (too expensive, slow speeds, not reliable, no longer needed, moving, other)
   - Intelligent flows based on reason: price negotiation for "too expensive", troubleshooting offer for speed/reliability issues (active subscriptions only)
