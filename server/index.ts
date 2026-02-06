@@ -2469,15 +2469,15 @@ app.post("/api/subscription/pause/execute", async (req, res) => {
 
     const now = new Date();
     const pauseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    pauseDate.setDate(pauseDate.getDate() + 1);
+
+    const nextBillingDate = targetSub.nextBillingAt ? new Date(targetSub.nextBillingAt) : null;
+    const billingDayOfMonth = nextBillingDate ? nextBillingDate.getUTCDate() : pauseDate.getDate();
+
     const resumeDate = new Date(pauseDate);
     resumeDate.setMonth(resumeDate.getMonth() + durationMonths);
-    resumeDate.setDate(pauseDate.getDate());
+    resumeDate.setDate(billingDayOfMonth);
 
-    const pauseTimestamp = Math.floor(pauseDate.getTime() / 1000);
-    const resumeTimestamp = Math.floor(resumeDate.getTime() / 1000);
-
-    const result = await pauseChargebeeSubscription(subscriptionId, pauseTimestamp, resumeTimestamp);
+    const result = await pauseChargebeeSubscription(subscriptionId, 0, Math.floor(resumeDate.getTime() / 1000));
 
     if (result.success) {
       await storage.createSubscriptionPause({

@@ -1391,12 +1391,16 @@ export async function pauseChargebeeSubscription(
   resumeDate: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const result = await chargebeeApiPost(`/subscriptions/${subscriptionId}/pause`, {
-      'pause_option': 'specific_date',
-      'pause_date': String(pauseDate),
+    const params: Record<string, string> = {
+      'pause_option': 'immediately',
       'resume_date': String(resumeDate),
       'unbilled_charges_handling': 'invoice_now',
-    });
+    };
+    if (pauseDate > 0) {
+      params['pause_option'] = 'specific_date';
+      params['pause_date'] = String(pauseDate);
+    }
+    const result = await chargebeeApiPost(`/subscriptions/${subscriptionId}/pause`, params);
 
     if (result?.subscription) {
       return { success: true };
