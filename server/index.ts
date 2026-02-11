@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { storage } from "./storage";
-import { fetchCustomerFullData, fetchChargebeeCatalogItems, fetchChargebeeItemPrices } from "./services";
+import { fetchCustomerFullData, fetchChargebeeCatalogItems, fetchChargebeeItemPrices, removeAddonFromSubscription, getSubscriptionCurrentItems, addTravelAddonToSubscription, verifySubscriptionOwnership } from "./services";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -3982,6 +3982,135 @@ async function seedPortalSettings() {
     }
   }
 }
+
+app.get("/api/subscription/addons/available", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { customerId: number; email?: string };
+    if (!decoded.email) return res.status(401).json({ error: "Unauthorized" });
+
+    const { subscriptionId } = req.query;
+    if (!subscriptionId || typeof subscriptionId !== 'string') {
+      return res.status(400).json({ error: "subscriptionId is required" });
+    }
+
+    const ownership = await verifySubscriptionOwnership(subscriptionId, decoded.email);
+    if (!ownership.owned) {
+      return res.status(403).json({ error: ownership.error || "Access denied" });
+    }
+
+    const itemsResult = await getSubscriptionCurrentItems(subscriptionId);
+    if (!itemsResult.success || !itemsResult.items) {
+      return res.status(400).json({ error: itemsResult.error || "Failed to get subscription items" });
+    }
+
+    const { getAvailableAddonsForSubscription } = await import("../shared/addonConfig");
+    const { available, alreadyActive } = getAvailableAddonsForSubscription(itemsResult.items);
+
+    const currentAddons = itemsResult.items
+      .filter(item => item.itemType === 'addon')
+      .map(item => ({
+        itemPriceId: item.itemPriceId,
+        amount: item.amount,
+        quantity: item.quantity,
+      }));
+
+    res.json({ available, alreadyActive, currentAddons });
+  } catch (error: any) {
+    console.error("Get available addons error:", error);
+    res.status(500).json({ error: error.message || "Failed to get available add-ons" });
+  }
+});
+
+app.post("/api/subscription/addons/add", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { customerId: number; email?: string };
+    if (!decoded.email) return res.status(401).json({ error: "Unauthorized" });
+
+    const { subscriptionId, addonFamily } = req.body;
+    if (!subscriptionId || !addonFamily) {
+      return res.status(400).json({ error: "subscriptionId and addonFamily are required" });
+    }
+
+    const ownership = await verifySubscriptionOwnership(subscriptionId, decoded.email);
+    if (!ownership.owned) {
+      return res.status(403).json({ error: ownership.error || "Access denied" });
+    }
+
+    const { getAddonByFamily } = await import("../shared/addonConfig");
+    const addonDef = getAddonByFamily(addonFamily);
+    if (!addonDef) {
+      return res.status(400).json({ error: "Invalid add-on" });
+    }
+
+    const itemsResult = await getSubscriptionCurrentItems(subscriptionId);
+    if (!itemsResult.success || !itemsResult.items) {
+      return res.status(400).json({ error: "Failed to verify subscription" });
+    }
+
+    const { getAvailableAddonsForSubscription } = await import("../shared/addonConfig");
+    const { available } = getAvailableAddonsForSubscription(itemsResult.items);
+    const isAvailable = available.some(a => a.family === addonFamily);
+    if (!isAvailable) {
+      return res.status(400).json({ error: "This add-on is already active on your subscription" });
+    }
+
+    if (addonFamily === 'travel') {
+      const result = await addTravelAddonToSubscription(subscriptionId);
+      if (result.success) {
+        return res.json({ success: true, invoiceId: result.invoiceId, message: "Travel Add-on added successfully" });
+      } else {
+        return res.status(400).json({ error: result.error || "Failed to add add-on" });
+      }
+    }
+
+    return res.status(400).json({ error: "Unknown add-on family" });
+  } catch (error: any) {
+    console.error("Add addon error:", error);
+    res.status(500).json({ error: error.message || "Failed to add add-on" });
+  }
+});
+
+app.post("/api/subscription/addons/remove", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { customerId: number; email?: string };
+    if (!decoded.email) return res.status(401).json({ error: "Unauthorized" });
+
+    const { subscriptionId, addonFamily } = req.body;
+    if (!subscriptionId || !addonFamily) {
+      return res.status(400).json({ error: "subscriptionId and addonFamily are required" });
+    }
+
+    const ownership = await verifySubscriptionOwnership(subscriptionId, decoded.email);
+    if (!ownership.owned) {
+      return res.status(403).json({ error: ownership.error || "Access denied" });
+    }
+
+    const { getAddonByFamily } = await import("../shared/addonConfig");
+    const addonDef = getAddonByFamily(addonFamily);
+    if (!addonDef) {
+      return res.status(400).json({ error: "Invalid add-on" });
+    }
+
+    const result = await removeAddonFromSubscription(subscriptionId, addonDef.itemPriceId);
+    if (result.success) {
+      return res.json({ success: true, message: "Add-on removed successfully" });
+    } else {
+      return res.status(400).json({ error: result.error || "Failed to remove add-on" });
+    }
+  } catch (error: any) {
+    console.error("Remove addon error:", error);
+    res.status(500).json({ error: error.message || "Failed to remove add-on" });
+  }
+});
 
 app.listen(PORT, "0.0.0.0", async () => {
   console.log(`Server running on port ${PORT}`);

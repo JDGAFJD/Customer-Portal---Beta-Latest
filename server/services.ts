@@ -1405,6 +1405,107 @@ export async function addTravelAddonToSubscription(subscriptionId: string): Prom
   }
 }
 
+export async function removeAddonFromSubscription(subscriptionId: string, addonItemPriceId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const subData = await chargebeeApiGet(`/subscriptions/${subscriptionId}`);
+    if (!subData?.subscription) {
+      return { success: false, error: 'Subscription not found' };
+    }
+
+    const currentItems = subData.subscription.subscription_items || [];
+    const addonExists = currentItems.some((item: any) => item.item_price_id === addonItemPriceId && item.item_type === 'addon');
+
+    if (!addonExists) {
+      const familyMatch = currentItems.find((item: any) => {
+        if (item.item_type !== 'addon') return false;
+        const lower = item.item_price_id.toLowerCase();
+        return lower.includes('travel-upgrade') || lower.includes('travel-modem') || lower.includes('nomad-travel') || lower.includes('travel-pause');
+      });
+
+      if (familyMatch) {
+        addonItemPriceId = familyMatch.item_price_id;
+      } else {
+        return { success: false, error: 'Add-on not found on this subscription' };
+      }
+    }
+
+    const remainingItems = currentItems.filter((item: any) => item.item_price_id !== addonItemPriceId);
+    const rebuildParams: Record<string, string> = {
+      'replace_items_list': 'true',
+      'prorate': 'true',
+    };
+    remainingItems.forEach((item: any, index: number) => {
+      rebuildParams[`subscription_items[item_price_id][${index}]`] = item.item_price_id;
+      rebuildParams[`subscription_items[quantity][${index}]`] = String(item.quantity || 1);
+    });
+
+    const result = await chargebeeApiPost(
+      `/subscriptions/${subscriptionId}/update_for_items`,
+      rebuildParams
+    );
+
+    if (result?.subscription) {
+      try {
+        await chargebeeApiPost('/comments', {
+          'entity_type': 'subscription',
+          'entity_id': subscriptionId,
+          'notes': `Customer removed the add-on "${addonItemPriceId}" from their subscription via the Customer Portal.`
+        });
+      } catch (commentErr) {
+        console.error('Failed to add Chargebee comment:', commentErr);
+      }
+      return { success: true };
+    }
+    return { success: false, error: 'Failed to remove add-on from subscription' };
+  } catch (error: any) {
+    console.error('Error removing addon:', error);
+    return { success: false, error: error.message || 'Failed to remove add-on' };
+  }
+}
+
+export async function getSubscriptionCurrentItems(subscriptionId: string): Promise<{ success: boolean; items?: Array<{ itemPriceId: string; itemType: string; quantity: number; amount: number }>; error?: string }> {
+  try {
+    const subData = await chargebeeApiGet(`/subscriptions/${subscriptionId}`);
+    if (!subData?.subscription) {
+      return { success: false, error: 'Subscription not found' };
+    }
+    const items = (subData.subscription.subscription_items || []).map((si: any) => ({
+      itemPriceId: si.item_price_id,
+      itemType: si.item_type,
+      quantity: si.quantity || 1,
+      amount: (si.amount || 0) / 100,
+    }));
+    return { success: true, items };
+  } catch (error: any) {
+    console.error('Error getting subscription items:', error);
+    return { success: false, error: error.message || 'Failed to get subscription items' };
+  }
+}
+
+export async function verifySubscriptionOwnership(subscriptionId: string, customerEmail: string): Promise<{ owned: boolean; customerId?: string; error?: string }> {
+  try {
+    const subData = await chargebeeApiGet(`/subscriptions/${subscriptionId}`);
+    if (!subData?.subscription) {
+      return { owned: false, error: 'Subscription not found' };
+    }
+    const subCustomerId = subData.subscription.customer_id;
+    if (!subCustomerId) {
+      return { owned: false, error: 'No customer linked to subscription' };
+    }
+    const customerData = await chargebeeApiGet(`/customers/${subCustomerId}`);
+    if (!customerData?.customer) {
+      return { owned: false, error: 'Customer not found' };
+    }
+    if (customerData.customer.email?.toLowerCase() !== customerEmail.toLowerCase()) {
+      return { owned: false, error: 'Subscription does not belong to this account' };
+    }
+    return { owned: true, customerId: subCustomerId };
+  } catch (error: any) {
+    console.error('Error verifying subscription ownership:', error);
+    return { owned: false, error: 'Failed to verify ownership' };
+  }
+}
+
 export async function checkSubscriptionPaymentStatus(subscriptionId: string): Promise<{ isPaid: boolean; totalDues: number; dueInvoicesCount: number }> {
   try {
     const subData = await chargebeeApiGet(`/subscriptions/${subscriptionId}`);

@@ -5,6 +5,7 @@ import { FeedbackButton } from '../components/FeedbackButton'
 import { CancellationModal } from '../components/CancellationModal'
 import { PauseSubscriptionModal } from '../components/PauseSubscriptionModal'
 import { PlanChangeModal } from '../components/PlanChangeModal'
+import { ManageAddonsModal } from '../components/ManageAddonsModal'
 import { getPlanDisplayName } from '../utils/planNames'
 import { isPlanChangeEligible } from '../../shared/planChangeConfig'
 
@@ -232,6 +233,8 @@ export default function Dashboard() {
   const [subscriptionToPause, setSubscriptionToPause] = useState<ChargebeeSubscription | null>(null)
   const [planChangeModalOpen, setPlanChangeModalOpen] = useState(false)
   const [subscriptionToChangePlan, setSubscriptionToChangePlan] = useState<ChargebeeSubscription | null>(null)
+  const [addonsModalOpen, setAddonsModalOpen] = useState(false)
+  const [subscriptionForAddons, setSubscriptionForAddons] = useState<ChargebeeSubscription | null>(null)
   const [cancellingScheduledChange, setCancellingScheduledChange] = useState<string | null>(null)
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   const [subscriptionForHistory, setSubscriptionForHistory] = useState<string | null>(null)
@@ -973,6 +976,17 @@ void collectibleInvoices.length
                                   className="px-4 py-2 text-sm font-medium border rounded-lg transition-colors text-blue-600 border-blue-400 hover:bg-blue-50"
                                 >
                                   Change Plan
+                                </button>
+                              )}
+                              {sub.status === 'active' && (
+                                <button
+                                  onClick={() => {
+                                    setSubscriptionForAddons(sub)
+                                    setAddonsModalOpen(true)
+                                  }}
+                                  className="px-4 py-2 text-sm font-medium border rounded-lg transition-colors text-purple-600 border-purple-400 hover:bg-purple-50"
+                                >
+                                  Manage Add-ons
                                 </button>
                               )}
                               {sub.status === 'active' && (
@@ -1905,6 +1919,21 @@ void collectibleInvoices.length
           subscription={subscriptionToChangePlan}
           token={authToken}
           onPlanChangeComplete={() => {
+            window.location.reload()
+          }}
+        />
+      )}
+
+      {authToken && subscriptionForAddons && (
+        <ManageAddonsModal
+          isOpen={addonsModalOpen}
+          onClose={() => {
+            setAddonsModalOpen(false)
+            setSubscriptionForAddons(null)
+          }}
+          subscription={subscriptionForAddons}
+          token={authToken}
+          onAddonChangeComplete={() => {
             window.location.reload()
           }}
         />

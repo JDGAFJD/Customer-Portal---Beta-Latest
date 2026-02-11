@@ -22,6 +22,7 @@ The design adheres to Nomad Internet's official branding with a modern SaaS aest
 - **Cancellation & Retention Flow**: Implements a multi-step cancellation modal with intelligent flows based on user reasons, offering retention discounts or troubleshooting, and integrating with Zendesk and Slack for support.
 - **Customer Feedback System**: Allows customers to submit and view feedback, with an admin interface for management and response.
 - **Credit Notes & Refunds Visibility**: Fetches and displays credit notes from Chargebee, providing detailed views and PDF downloads.
+- **Add-on Management**: Customers can add and remove subscription add-ons (e.g., Travel Add-on) via a dedicated modal. Features de-duplication logic for Travel add-on variants, upsell-biased UI encouraging add-on purchases, and retention messaging discouraging removal. Backend verifies subscription ownership before any changes.
 
 ### Feature Specifications
 - **Sign-Up & Sign-In Flows**: Comprehensive flows including email and phone OTP verification, secure password handling, and passwordless options.
