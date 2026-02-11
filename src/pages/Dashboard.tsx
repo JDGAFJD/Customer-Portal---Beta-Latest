@@ -629,20 +629,28 @@ void collectibleInvoices.length
         </div>
       </header>
 
-      <nav className="bg-white border-b border-gray-200">
+      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-            {['overview', 'subscriptions', 'orders', 'invoices', 'internet'].map((tab) => (
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide py-2">
+            {[
+              { key: 'overview', label: 'Overview', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg> },
+              { key: 'subscriptions', label: 'Subscriptions', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg> },
+              { key: 'orders', label: 'Orders', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg> },
+              { key: 'invoices', label: 'Invoices', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> },
+              { key: 'internet', label: 'Internet', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" /></svg> },
+            ].map((tab) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab 
-                    ? 'border-primary text-primary' 
-                    : 'border-transparent text-muted hover:text-text hover:border-gray-300'
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap ${
+                  activeTab === tab.key 
+                    ? 'text-white shadow-md' 
+                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                 }`}
+                style={activeTab === tab.key ? { background: 'linear-gradient(135deg, #0d9668, #10a37f, #34d399)' } : {}}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab.icon}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -810,7 +818,12 @@ void collectibleInvoices.length
             {activeTab === 'subscriptions' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-text">Your Subscriptions</h2>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'linear-gradient(135deg, #0d9668, #10a37f)' }}></div>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Your Subscriptions</span>
+                    </div>
+                  </div>
                   {(fullData?.chargebee.customers.length || 0) > 1 && (
                     <span className="text-sm text-muted">
                       {fullData?.chargebee.customers.length} customer accounts
@@ -821,7 +834,7 @@ void collectibleInvoices.length
                 {fullData?.chargebee.customers.map((cbCustomer) => (
                   <div key={cbCustomer.id} className="space-y-4">
                     {(fullData?.chargebee.customers.length || 0) > 1 && (
-                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="rounded-2xl p-4 border border-gray-100" style={{ background: 'linear-gradient(135deg, rgba(16,163,127,0.03), rgba(52,211,153,0.03))' }}>
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-semibold text-text">
@@ -842,61 +855,66 @@ void collectibleInvoices.length
                     )}
                     
                     {cbCustomer.subscriptions.map((sub) => (
-                      <div key={sub.id} className="bg-white rounded-lg border border-gray-200 p-6">
+                      <div key={sub.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                        <div className="h-1" style={{ background: 'linear-gradient(90deg, #0d9668, #10a37f, #34d399)' }}></div>
+                        <div className="p-6">
                         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <h3 className="text-lg font-semibold text-text">{getPlanDisplayName(sub.planId)}</h3>
-                              <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(sub.status)}`}>
+                              <span className={`px-2.5 py-1 text-xs rounded-lg ${getStatusColor(sub.status)}`}>
                                 {sub.status}
                               </span>
                             </div>
                             <p className="text-2xl font-bold text-primary mb-4">
-                              {formatCurrency(sub.planAmount)}/{sub.billingPeriodUnit}
+                              <span className="inline-block px-3 py-1 rounded-xl" style={{ backgroundColor: 'rgba(16,163,127,0.08)' }}>{formatCurrency(sub.planAmount)}/{sub.billingPeriodUnit}</span>
                             </p>
                             
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                               <div>
-                                <p className="text-muted">Next Billing</p>
-                                <p className="font-medium">{formatDate(sub.nextBillingAt)}</p>
+                                <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Next Billing</p>
+                                <p className="text-sm font-semibold text-gray-800">{formatDate(sub.nextBillingAt)}</p>
                               </div>
                               <div>
-                                <p className="text-muted">Current Period Ends</p>
-                                <p className="font-medium">{formatDate(sub.currentTermEnd)}</p>
+                                <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Current Period Ends</p>
+                                <p className="text-sm font-semibold text-gray-800">{formatDate(sub.currentTermEnd)}</p>
                               </div>
                               <div>
-                                <p className="text-muted">Due Invoices</p>
-                                <p className={`font-medium ${sub.dueInvoicesCount > 0 ? 'text-red-600' : ''}`}>
+                                <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Due Invoices</p>
+                                <p className={`text-sm font-semibold text-gray-800 ${sub.dueInvoicesCount > 0 ? 'text-red-600' : ''}`}>
                                   {sub.dueInvoicesCount}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-muted">Amount Due</p>
-                                <p className={`font-medium ${sub.totalDues > 0 ? 'text-red-600' : ''}`}>
+                                <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Amount Due</p>
+                                <p className={`text-sm font-semibold text-gray-800 ${sub.totalDues > 0 ? 'text-red-600' : ''}`}>
                                   {formatCurrency(sub.totalDues)}
                                 </p>
                               </div>
                             </div>
 
                             {(sub.iccid || sub.imei) && (
-                              <div className="mt-4 pt-4 border-t border-gray-100">
-                                <p className="text-sm text-muted mb-2">Device Information</p>
+                              <div className="mt-4 pt-4 border-t border-gray-50">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'linear-gradient(135deg, #0d9668, #10a37f)' }}></div>
+                                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Device Information</span>
+                                </div>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                   {sub.iccid && (
-                                    <div>
-                                      <p className="text-muted">ICCID</p>
+                                    <div className="bg-gray-50/80 rounded-xl px-3 py-2">
+                                      <p className="text-xs font-medium uppercase tracking-wider text-gray-400">ICCID</p>
                                       <p className="font-mono text-xs">{sub.iccid}</p>
                                     </div>
                                   )}
                                   {sub.imei && (
-                                    <div>
-                                      <p className="text-muted">IMEI</p>
+                                    <div className="bg-gray-50/80 rounded-xl px-3 py-2">
+                                      <p className="text-xs font-medium uppercase tracking-wider text-gray-400">IMEI</p>
                                       <p className="font-mono text-xs">{sub.imei}</p>
                                     </div>
                                   )}
                                   {sub.mdn && (
-                                    <div>
-                                      <p className="text-muted">MDN</p>
+                                    <div className="bg-gray-50/80 rounded-xl px-3 py-2">
+                                      <p className="text-xs font-medium uppercase tracking-wider text-gray-400">MDN</p>
                                       <p className="font-mono text-xs">{sub.mdn}</p>
                                     </div>
                                   )}
@@ -905,11 +923,14 @@ void collectibleInvoices.length
                             )}
 
                             {sub.subscriptionItems && sub.subscriptionItems.filter(item => item.itemType === 'addon').length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-gray-100">
-                                <p className="text-sm text-muted mb-2">Add-ons</p>
+                              <div className="mt-4 pt-4 border-t border-gray-50">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'linear-gradient(135deg, #0d9668, #10a37f)' }}></div>
+                                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Add-ons</span>
+                                </div>
                                 <div className="space-y-2">
                                   {sub.subscriptionItems.filter(item => item.itemType === 'addon').map((addon, idx) => (
-                                    <div key={idx} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                                    <div key={idx} className="flex items-center justify-between rounded-xl px-3 py-2" style={{ borderLeft: '3px solid #10a37f', background: 'rgba(16,163,127,0.04)' }}>
                                       <span className="text-sm font-medium text-text">{getPlanDisplayName(addon.itemPriceId)}</span>
                                       <span className="text-sm font-semibold text-primary">{formatCurrency(addon.amount)}/{sub.billingPeriodUnit}</span>
                                     </div>
@@ -919,8 +940,8 @@ void collectibleInvoices.length
                             )}
 
                             {sub.hasScheduledChanges && sub.scheduledChanges && (
-                              <div className="mt-4 pt-4 border-t border-gray-100">
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                              <div className="mt-4 pt-4 border-t border-gray-50">
+                                <div className="bg-blue-50 border border-blue-200 rounded-2xl shadow-sm p-4">
                                   <div className="flex items-start gap-3">
                                     <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -944,10 +965,13 @@ void collectibleInvoices.length
                               </div>
                             )}
 
-                            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-3">
+                            <div className="mt-4 pt-4 border-t border-gray-50 flex flex-wrap gap-3">
                               <button
                                 onClick={() => openSubscriptionDetail(sub, cbCustomer)}
-                                className="px-4 py-2 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-colors"
+                                className="group inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 hover:shadow-md active:scale-[0.97]"
+                                style={{ color: '#10a37f', backgroundColor: 'rgba(16,163,127,0.06)', border: '1px solid rgba(16,163,127,0.15)' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16,163,127,0.12)'; e.currentTarget.style.borderColor = 'rgba(16,163,127,0.3)' }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16,163,127,0.06)'; e.currentTarget.style.borderColor = 'rgba(16,163,127,0.15)' }}
                               >
                                 View Invoices & Transactions
                               </button>
@@ -955,7 +979,7 @@ void collectibleInvoices.length
                                 <button
                                   onClick={() => handlePayNow(cbCustomer.id)}
                                   disabled={paymentLoading === 'pay'}
-                                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all duration-200 active:scale-[0.97] disabled:opacity-50"
                                 >
                                   {paymentLoading === 'pay' ? 'Loading...' : `Pay ${formatCurrency(sub.totalDues)}`}
                                 </button>
@@ -963,7 +987,10 @@ void collectibleInvoices.length
                               <button
                                 onClick={() => handleUpdatePaymentMethod(cbCustomer.id)}
                                 disabled={paymentLoading === 'update'}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                className="group inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 hover:shadow-md active:scale-[0.97] disabled:opacity-50"
+                                style={{ color: '#374151', backgroundColor: 'rgba(107,114,128,0.06)', border: '1px solid rgba(107,114,128,0.15)' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(107,114,128,0.12)'; e.currentTarget.style.borderColor = 'rgba(107,114,128,0.3)' }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(107,114,128,0.06)'; e.currentTarget.style.borderColor = 'rgba(107,114,128,0.15)' }}
                               >
                                 {paymentLoading === 'update' ? 'Loading...' : 'Update Payment Method'}
                               </button>
@@ -1044,19 +1071,27 @@ void collectibleInvoices.length
                                                       </div>
                         </div>
                       </div>
+                      </div>
                     ))}
                     
                     {cbCustomer.subscriptions.length === 0 && (
-                      <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-                        <p className="text-sm text-muted">No subscriptions for this customer account</p>
+                      <div className="bg-white/60 rounded-2xl border border-gray-100 p-12 text-center">
+                        <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        <p className="text-sm text-muted">No subscriptions found for this customer account</p>
                       </div>
                     )}
                   </div>
                 ))}
                 
                 {(fullData?.chargebee.customers.length === 0) && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <div className="bg-white/60 rounded-2xl border border-gray-100 p-12 text-center">
+                    <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
                     <p className="text-muted">No subscriptions found</p>
+                    <p className="text-sm text-gray-400 mt-1">Your subscription details will appear here once available</p>
                   </div>
                 )}
               </div>
@@ -1064,17 +1099,19 @@ void collectibleInvoices.length
 
             {activeTab === 'orders' && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-text">Your Orders</h2>
+                <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full" style={{ background: 'linear-gradient(135deg, #0d9668, #10a37f)' }}></div><span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Your Orders</span></div>
                 {fullData?.orders.map((order) => (
-                  <div key={order.orderNumber} className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div key={order.orderNumber} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                    <div className="h-1" style={{ background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa)' }}></div>
+                    <div className="p-6">
                     <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
                       <div>
                         <div className="flex items-center gap-3 mb-1">
                           <h3 className="text-lg font-semibold text-text">{order.orderNumber}</h3>
-                          <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(order.fulfillmentStatus)}`}>
+                          <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${getStatusColor(order.fulfillmentStatus)}`}>
                             {order.fulfillmentStatus}
                           </span>
-                          <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(order.paymentStatus)}`}>
+                          <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${getStatusColor(order.paymentStatus)}`}>
                             {order.paymentStatus}
                           </span>
                         </div>
@@ -1083,15 +1120,15 @@ void collectibleInvoices.length
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-bold text-text">{formatCurrency(order.total)}</p>
+                        <p className="text-xl font-bold text-gray-800"><span className="inline-block px-3 py-1 rounded-xl" style={{ backgroundColor: 'rgba(99,102,241,0.08)' }}>{formatCurrency(order.total)}</span></p>
                       </div>
                     </div>
 
-                    <div className="border-t border-gray-100 pt-4">
-                      <p className="text-sm font-medium text-text mb-2">Items</p>
+                    <div className="border-t border-gray-50 pt-4">
+                      <div className="flex items-center gap-2 mb-3"><div className="w-1 h-1 rounded-full bg-indigo-400"></div><span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Items</span></div>
                       <div className="space-y-2">
                         {order.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between text-sm">
+                          <div key={idx} className="flex justify-between text-sm py-1.5">
                             <span>
                               {item.name} 
                               {item.sku && <span className="text-muted ml-2">({item.sku})</span>}
@@ -1104,8 +1141,8 @@ void collectibleInvoices.length
                     </div>
 
                     {order.shipping && (
-                      <div className="border-t border-gray-100 pt-4 mt-4">
-                        <p className="text-sm font-medium text-text mb-2">Shipping Address</p>
+                      <div className="border-t border-gray-50 pt-4 mt-4">
+                        <div className="flex items-center gap-2 mb-3"><div className="w-1 h-1 rounded-full bg-indigo-400"></div><span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Shipping Address</span></div>
                         <p className="text-sm text-muted">
                           {order.shipping.name}<br />
                           {order.shipping.address1}<br />
@@ -1115,8 +1152,8 @@ void collectibleInvoices.length
                     )}
 
                     {order.tracking.length > 0 && (
-                      <div className="border-t border-gray-100 pt-4 mt-4">
-                        <p className="text-sm font-medium text-text mb-2">Tracking</p>
+                      <div className="border-t border-gray-50 pt-4 mt-4">
+                        <div className="flex items-center gap-2 mb-3"><div className="w-1 h-1 rounded-full bg-indigo-400"></div><span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Tracking</span></div>
                         <div className="space-y-2">
                           {order.tracking.map((t, idx) => (
                             <div key={idx} className="flex items-center justify-between text-sm">
@@ -1125,7 +1162,7 @@ void collectibleInvoices.length
                                 <span className="text-muted ml-2">#{t.trackingNumber}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(t.status)}`}>
+                                <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${getStatusColor(t.status)}`}>
                                   {t.status}
                                 </span>
                                 {t.trackingUrl && (
@@ -1133,7 +1170,8 @@ void collectibleInvoices.length
                                     href={t.trackingUrl} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-primary hover:underline"
+                                    className="inline-flex items-center gap-1 text-sm font-medium rounded-lg px-2.5 py-1 transition-all duration-200 hover:shadow-sm active:scale-[0.97]"
+                                    style={{ color: '#10a37f', backgroundColor: 'rgba(16,163,127,0.06)' }}
                                   >
                                     Track
                                   </a>
@@ -1146,17 +1184,17 @@ void collectibleInvoices.length
                     )}
 
                     {(order.imei || order.iccid) && (
-                      <div className="border-t border-gray-100 pt-4 mt-4">
-                        <p className="text-sm font-medium text-text mb-2">Device Information</p>
+                      <div className="border-t border-gray-50 pt-4 mt-4">
+                        <div className="flex items-center gap-2 mb-3"><div className="w-1 h-1 rounded-full bg-indigo-400"></div><span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Device Information</span></div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                           {order.imei && (
-                            <div>
+                            <div className="bg-gray-50/80 rounded-xl px-3 py-2">
                               <span className="text-muted">IMEI:</span>
                               <span className="ml-2 font-mono text-text">{order.imei}</span>
                             </div>
                           )}
                           {order.iccid && (
-                            <div>
+                            <div className="bg-gray-50/80 rounded-xl px-3 py-2">
                               <span className="text-muted">ICCID:</span>
                               <span className="ml-2 font-mono text-text">{order.iccid}</span>
                             </div>
@@ -1165,11 +1203,16 @@ void collectibleInvoices.length
                       </div>
                     )}
                     
+                    </div>
                                       </div>
                 ))}
                 {(!fullData?.orders.length) && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                    <p className="text-muted">No orders found</p>
+                  <div className="bg-white/60 rounded-2xl border border-gray-100 p-12 text-center">
+                    <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))' }}>
+                      <svg className="w-8 h-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                    </div>
+                    <p className="text-gray-400 font-medium">No orders found</p>
+                    <p className="text-xs text-gray-300 mt-1">Your order history will appear here</p>
                   </div>
                 )}
               </div>
@@ -1566,12 +1609,15 @@ void collectibleInvoices.length
             {activeTab === 'internet' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-text">Your Internet Services</h2>
+                  <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full" style={{ background: 'linear-gradient(135deg, #0d9668, #10a37f)' }}></div><span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Your Internet Services</span></div>
                   <button
                     onClick={() => fetchFullData()}
                     disabled={isLoadingData}
                     title="Refresh data from all systems"
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-colors disabled:opacity-50"
+                    className="group inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 hover:shadow-md active:scale-[0.97] disabled:opacity-50"
+                    style={{ color: '#10a37f', backgroundColor: 'rgba(16,163,127,0.06)', border: '1px solid rgba(16,163,127,0.15)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16,163,127,0.12)'; e.currentTarget.style.borderColor = 'rgba(16,163,127,0.3)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16,163,127,0.06)'; e.currentTarget.style.borderColor = 'rgba(16,163,127,0.15)' }}
                   >
                     <svg className={`w-4 h-4 ${isLoadingData ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1643,7 +1689,8 @@ void collectibleInvoices.length
                   const statusDisplay = getStatusDisplay()
                   
                   return (
-                    <div key={subscription.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div key={subscription.id || idx} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+                      <div className="h-1" style={{ background: 'linear-gradient(90deg, #0d9668, #10a37f, #34d399)' }}></div>
                       <div className="p-6">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                           <div>
@@ -1651,11 +1698,11 @@ void collectibleInvoices.length
                             <p className="text-sm text-muted">Subscription #{subscription.id}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusDisplay.color}`}>
+                            <span className={`px-3 py-1 text-xs font-medium rounded-lg ${statusDisplay.color}`}>
                               {statusDisplay.label}
                             </span>
                             {isActive && (
-                              <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                              <span className={`px-3 py-1 text-xs font-medium rounded-lg ${
                                 isPaid ? 'bg-green-100 text-green-800' : 
                                 gracePeriod.inGracePeriod ? 'bg-orange-100 text-orange-800' : 
                                 'bg-red-100 text-red-800'
@@ -1667,38 +1714,38 @@ void collectibleInvoices.length
                         </div>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                          <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="rounded-xl p-4" style={{ background: 'rgba(16,163,127,0.03)', border: '1px solid rgba(16,163,127,0.08)' }}>
                             <p className="text-xs text-muted uppercase tracking-wide mb-1">IMEI</p>
                             <p className="font-mono text-sm text-text">{subscription.imei || 'N/A'}</p>
                           </div>
-                          <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="rounded-xl p-4" style={{ background: 'rgba(16,163,127,0.03)', border: '1px solid rgba(16,163,127,0.08)' }}>
                             <p className="text-xs text-muted uppercase tracking-wide mb-1">ICCID</p>
                             <p className="font-mono text-sm text-text break-all">{subscription.iccid || 'N/A'}</p>
                           </div>
                         </div>
                         
-                        <div className={`rounded-lg p-4 border-2 ${
+                        <div className={`rounded-2xl p-4 border ${
                           lineStatus.color === 'green' ? 'bg-green-50 border-green-200' :
                           lineStatus.color === 'yellow' ? 'bg-yellow-50 border-yellow-200' :
                           'bg-red-50 border-red-200'
                         }`}>
                           <div className="flex items-center gap-3">
                             {lineStatus.color === 'green' && (
-                              <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0d9668, #34d399)' }}>
                                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
                                 </svg>
                               </div>
                             )}
                             {lineStatus.color === 'yellow' && (
-                              <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center">
+                              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #d97706, #fbbf24)' }}>
                                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                               </div>
                             )}
                             {lineStatus.color === 'red' && (
-                              <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center">
+                              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #dc2626, #f87171)' }}>
                                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a5 5 0 01-7.072-7.072m7.072 7.072L6.343 17.657M6.343 6.343L3 3m3.343 3.343a5 5 0 017.072 0" />
                                 </svg>
@@ -1730,7 +1777,7 @@ void collectibleInvoices.length
                             )}
                           </div>
                           {lineStatus.color === 'yellow' && normalizedState.includes('pending resume') && (
-                            <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div className="mt-3 bg-yellow-50/80 border border-yellow-100 rounded-xl p-3">
                               <div className="flex items-start gap-2">
                                 <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1747,8 +1794,8 @@ void collectibleInvoices.length
                           <div className="mt-4 flex gap-3">
                             <button
                               onClick={() => handleTroubleshooting(subscription.id, subscription.iccid, subscription.imei, subscription.mdn, lineState)}
-                              className="flex-1 px-4 py-3 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 text-white shadow-md hover:shadow-lg"
-                              style={{ backgroundColor: '#10a37f' }}
+                              className="flex-1 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-white shadow-md hover:shadow-lg hover:shadow-emerald-100 active:scale-[0.97]"
+                              style={{ background: 'linear-gradient(135deg, #0d9668, #10a37f, #34d399)' }}
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -1761,7 +1808,7 @@ void collectibleInvoices.length
                               <div className="relative" ref={deviceHelpOpen === subscription.id ? deviceHelpRef : null}>
                                 <button
                                   onClick={() => setDeviceHelpOpen(deviceHelpOpen === subscription.id ? null : subscription.id)}
-                                  className="px-4 py-3 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-50"
+                                  className="px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 hover:shadow-sm active:scale-[0.97]"
                                   style={{ color: '#0f172a' }}
                                 >
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1774,10 +1821,10 @@ void collectibleInvoices.length
                                 </button>
                                 
                                 {deviceHelpOpen === subscription.id && (
-                                  <div className="absolute right-0 bottom-full mb-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-2">
+                                  <div className="absolute right-0 bottom-full mb-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 backdrop-blur-sm z-50 py-2 px-1">
                                     <button
                                       onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
-                                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                                      className="w-full px-3 py-2.5 text-left text-sm rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors"
                                     >
                                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1786,7 +1833,7 @@ void collectibleInvoices.length
                                     </button>
                                     <button
                                       onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
-                                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                                      className="w-full px-3 py-2.5 text-left text-sm rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors"
                                     >
                                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
@@ -1795,7 +1842,7 @@ void collectibleInvoices.length
                                     </button>
                                     <button
                                       onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
-                                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                                      className="w-full px-3 py-2.5 text-left text-sm rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors"
                                     >
                                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -1804,7 +1851,7 @@ void collectibleInvoices.length
                                     </button>
                                     <button
                                       onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
-                                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                                      className="w-full px-3 py-2.5 text-left text-sm rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors"
                                     >
                                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -1813,7 +1860,7 @@ void collectibleInvoices.length
                                     </button>
                                     <button
                                       onClick={() => { setDeviceHelpOpen(null); setShowComingSoon(true); }}
-                                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                                      className="w-full px-3 py-2.5 text-left text-sm rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors"
                                     >
                                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -1829,7 +1876,7 @@ void collectibleInvoices.length
                         
                         {isActive && !isPaid && gracePeriod.inGracePeriod && (
                           <div className="mt-4">
-                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                            <div className="bg-orange-50/80 border border-orange-100 rounded-2xl p-4 mb-4">
                               <div className="flex items-start gap-3">
                                 <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
                                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1848,7 +1895,7 @@ void collectibleInvoices.length
                             <button
                               onClick={() => handlePayNow(cbCustomer.id)}
                               disabled={paymentLoading === 'pay'}
-                              className="w-full px-4 py-3 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors disabled:opacity-50"
+                              className="w-full px-4 py-3 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-xl transition-all duration-200 disabled:opacity-50 active:scale-[0.97] shadow-md hover:shadow-lg"
                             >
                               {paymentLoading === 'pay' ? 'Loading...' : `Pay Now ${formatCurrency(subscription.totalDues)}`}
                             </button>
@@ -1857,7 +1904,7 @@ void collectibleInvoices.length
                         
                         {isActive && !isPaid && !gracePeriod.inGracePeriod && (
                           <div className="mt-4">
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <div className="bg-red-50/80 border border-red-100 rounded-2xl p-4 mb-4">
                               <div className="flex items-start gap-3">
                                 <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
                                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1875,7 +1922,7 @@ void collectibleInvoices.length
                             <button
                               onClick={() => handlePayNow(cbCustomer.id)}
                               disabled={paymentLoading === 'pay'}
-                              className="w-full px-4 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+                              className="w-full px-4 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all duration-200 disabled:opacity-50 active:scale-[0.97] shadow-md hover:shadow-lg"
                             >
                               {paymentLoading === 'pay' ? 'Loading...' : `Pay Now ${formatCurrency(subscription.totalDues)}`}
                             </button>
@@ -1886,8 +1933,12 @@ void collectibleInvoices.length
                   )
                 }))}
                 {allSubscriptions.length === 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                    <p className="text-muted">No subscriptions found</p>
+                  <div className="bg-white/60 rounded-2xl border border-gray-100 p-12 text-center">
+                    <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(16,163,127,0.1), rgba(52,211,153,0.1))' }}>
+                      <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" /></svg>
+                    </div>
+                    <p className="text-gray-400 font-medium">No internet services found</p>
+                    <p className="text-xs text-gray-300 mt-1">Your internet service details will appear here</p>
                   </div>
                 )}
               </div>
