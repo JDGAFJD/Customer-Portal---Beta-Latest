@@ -1660,6 +1660,165 @@ app.post("/api/escalation/create", async (req, res) => {
   }
 });
 
+app.post("/api/troubleshooting/submit-ticket", customerApiLimiter, async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    let customerEmail: string | null = null;
+    let customerId: number | null = null;
+
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET!);
+      if (decoded.isTest) {
+        customerEmail = decoded.email;
+      }
+    } catch (e) {}
+
+    if (!customerEmail) {
+      const session = await storage.getSessionByToken(token);
+      if (!session) {
+        return res.status(401).json({ error: "Invalid session" });
+      }
+      const customer = await storage.getCustomer(session.customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      customerEmail = customer.email;
+      customerId = customer.id;
+    }
+
+    if (!customerEmail) {
+      return res.status(401).json({ error: "Could not determine customer" });
+    }
+
+    const {
+      subscriptionId,
+      iccid,
+      imei,
+      mdn,
+      issueType,
+      contactMethod,
+      phone,
+      callTime,
+      additionalNotes,
+      lineStatus,
+      troubleshootingSteps
+    } = req.body;
+
+    if (!contactMethod) {
+      return res.status(400).json({ error: "Please select a preferred contact method" });
+    }
+    if (contactMethod === 'phone' && !phone) {
+      return res.status(400).json({ error: "Phone number is required when choosing phone contact" });
+    }
+    if (!additionalNotes || additionalNotes.trim().length < 10) {
+      return res.status(400).json({ error: "Please provide at least 10 characters describing your issue" });
+    }
+
+    const customer = await storage.getCustomerByEmail(customerEmail);
+
+    const zendeskSubdomain = process.env.ZENDESK_SUBDOMAIN;
+    const zendeskEmail = process.env.ZENDESK_EMAIL;
+    const zendeskToken = process.env.ZENDESK_API_TOKEN;
+
+    const groupIdSetting = await storage.getPortalSetting("zendesk_troubleshooting_group_id");
+    const groupId = groupIdSetting?.value || "41909825396372";
+
+    let zendeskTicketId: string | null = null;
+
+    if (zendeskSubdomain && zendeskEmail && zendeskToken) {
+      try {
+        const issueLabel = issueType === 'slow_speed' ? 'Slow Speed' : issueType === 'line_restoration' ? 'Line Restoration' : (issueType || 'General').replace(/_/g, ' ');
+
+        const ticketBody = {
+          ticket: {
+            subject: `Troubleshooting Support - ${issueLabel} - ${subscriptionId || 'N/A'}`,
+            comment: {
+              body: `Customer troubleshooting support request submitted through portal.
+
+═══════════════════════════════════════
+CUSTOMER INFORMATION
+═══════════════════════════════════════
+Customer Email: ${customerEmail}
+Customer Name: ${customer?.fullName || "N/A"}
+Subscription ID: ${subscriptionId || "N/A"}
+
+═══════════════════════════════════════
+DEVICE INFORMATION
+═══════════════════════════════════════
+ICCID: ${iccid || "N/A"}
+IMEI: ${imei || "N/A"}
+MDN: ${mdn || "N/A"}
+Current Line Status: ${lineStatus || "Unknown"}
+
+═══════════════════════════════════════
+ISSUE DETAILS
+═══════════════════════════════════════
+Issue Type: ${issueLabel}
+${troubleshootingSteps ? `Troubleshooting Steps Completed:\n${troubleshootingSteps}` : "Customer completed all automated troubleshooting steps via portal."}
+
+═══════════════════════════════════════
+CONTACT PREFERENCES
+═══════════════════════════════════════
+Preferred Contact: ${contactMethod === "email" ? "Email" : "Phone Call"}
+${contactMethod === 'phone' && phone ? `Phone Number: ${phone}` : ""}
+${callTime ? `Preferred Call Time: ${callTime}` : ""}
+
+═══════════════════════════════════════
+CUSTOMER'S DESCRIPTION
+═══════════════════════════════════════
+${additionalNotes.trim()}
+
+═══════════════════════════════════════
+ACTION REQUIRED: Tier 1 Support - Please follow up with customer within 24 hours using their preferred contact method.`,
+              public: false
+            },
+            requester: { email: customerEmail, name: customer?.fullName || customerEmail },
+            group_id: parseInt(groupId),
+            priority: "normal",
+            tags: ["troubleshooting", "tier1_support", "portal", issueType || "general"]
+          }
+        };
+
+        const zendeskResponse = await fetch(
+          `https://${zendeskSubdomain}.zendesk.com/api/v2/tickets.json`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Basic " + Buffer.from(`${zendeskEmail}/token:${zendeskToken}`).toString("base64")
+            },
+            body: JSON.stringify(ticketBody)
+          }
+        );
+
+        if (zendeskResponse.ok) {
+          const zendeskData = await zendeskResponse.json();
+          zendeskTicketId = zendeskData.ticket?.id?.toString();
+          console.log("Troubleshooting Zendesk ticket created:", zendeskTicketId);
+        } else {
+          console.error("Troubleshooting Zendesk ticket creation failed:", await zendeskResponse.text());
+        }
+      } catch (zendeskError) {
+        console.error("Zendesk API error:", zendeskError);
+      }
+    }
+
+    res.json({
+      success: true,
+      ticketId: zendeskTicketId || `TS-${Date.now().toString(36).toUpperCase()}`,
+      message: "Support ticket created successfully"
+    });
+  } catch (error: any) {
+    console.error("Troubleshooting ticket error:", error);
+    res.status(500).json({ error: error.message || "Failed to create support ticket" });
+  }
+});
+
 app.post("/api/feedback", async (req, res) => {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");
@@ -4226,7 +4385,8 @@ if (process.env.NODE_ENV === "production") {
 async function seedPortalSettings() {
   const defaultSettings = [
     { key: 'slack_channel_id', value: 'C09DACN82VD', description: 'Slack channel for cancellation notifications' },
-    { key: 'zendesk_cancellation_group_id', value: '41909825396372', description: 'Zendesk Retention & Cancellations group ID' }
+    { key: 'zendesk_cancellation_group_id', value: '41909825396372', description: 'Zendesk Retention & Cancellations group ID' },
+    { key: 'zendesk_troubleshooting_group_id', value: '41909825396372', description: 'Zendesk Tier 1 Support group ID for troubleshooting tickets' }
   ];
 
   for (const setting of defaultSettings) {

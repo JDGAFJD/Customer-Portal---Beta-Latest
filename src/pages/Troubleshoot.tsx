@@ -27,6 +27,8 @@ type TroubleshootStep =
   | 'escalated'
   | 'escalation_pending'
   | 'escalation_submitted'
+  | 'support_contact_form'
+  | 'support_ticket_submitted'
   | 'no_line'
   | 'no_line_submitted'
   | 'error';
@@ -60,6 +62,13 @@ export default function Troubleshoot() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [escalationInfo, setEscalationInfo] = useState<EscalationInfo | null>(null);
   const [escalationTicketId, setEscalationTicketId] = useState<string>('');
+  const [contactMethod, setContactMethod] = useState<'email' | 'phone' | null>(null);
+  const [contactPhone, setContactPhone] = useState('');
+  const [preferredCallTime, setPreferredCallTime] = useState('');
+  const [ticketNotes, setTicketNotes] = useState('');
+  const [ticketSubmitting, setTicketSubmitting] = useState(false);
+  const [ticketError, setTicketError] = useState('');
+  const [supportTicketId, setSupportTicketId] = useState('');
   
   const [slowSpeedSessionId, setSlowSpeedSessionId] = useState<number | null>(null);
   const [slowSpeedEligibility, setSlowSpeedEligibility] = useState<{
@@ -274,6 +283,62 @@ export default function Troubleshoot() {
       return false;
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const submitTroubleshootingTicket = async (issueType: string) => {
+    const token = getToken();
+    if (!token) return;
+
+    setTicketSubmitting(true);
+    setTicketError('');
+
+    try {
+      const stepsCompleted = issueType === 'slow_speed'
+        ? [
+            issueOnset ? `Issue onset: ${issueOnset === 'just_started' ? 'Just started' : 'Ongoing issue'}` : null,
+            modemMoved !== null ? `Modem moved recently: ${modemMoved ? 'Yes' : 'No'}` : null,
+            'Completed speed refresh/suspend-resume cycle',
+            'Performed device power cycle',
+            outdoorTestResult ? `Outdoor speed test: ${outdoorTestResult === 'improved' ? 'Speeds improved outdoors' : 'Speeds same indoors and outdoors'}` : null,
+          ].filter(Boolean).join('\n- ')
+        : 'Automated line restoration attempted via portal (suspend/resume cycle completed)';
+
+      const response = await fetch('/api/troubleshooting/submit-ticket', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subscriptionId: subscriptionId || '',
+          iccid: iccid || '',
+          imei: imei || '',
+          mdn: mdn || '',
+          issueType,
+          contactMethod,
+          phone: contactPhone || undefined,
+          callTime: preferredCallTime || undefined,
+          additionalNotes: ticketNotes,
+          lineStatus: lineStatus || 'Unknown',
+          troubleshootingSteps: `- ${stepsCompleted}`
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setTicketError(errorData.error || 'Failed to create support ticket');
+        return;
+      }
+
+      const result = await response.json();
+      setSupportTicketId(result.ticketId);
+      setStep('support_ticket_submitted');
+    } catch (err) {
+      console.error('Submit troubleshooting ticket error:', err);
+      setTicketError('Failed to submit support ticket. Please try again.');
+    } finally {
+      setTicketSubmitting(false);
     }
   };
 
@@ -1327,13 +1392,17 @@ export default function Troubleshoot() {
                       sessionState: 'escalated'
                     });
                   }
-                  await createEscalation();
+                  setContactMethod(null);
+                  setContactPhone('');
+                  setPreferredCallTime('');
+                  setTicketNotes('');
+                  setTicketError('');
+                  setStep('support_contact_form');
                 }}
-                disabled={isSubmitting}
                 className="w-full px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg disabled:opacity-50 mb-3"
                 style={{ backgroundColor: '#6366f1' }}
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Support Request'}
+                Contact Support
               </button>
 
               <button
@@ -1492,7 +1561,7 @@ export default function Troubleshoot() {
               <p className="text-lg font-medium" style={{ color: '#0f172a' }}>Support Needed</p>
               <p className="text-gray-500 mt-2 mb-6">
                 We're still working on restoring your line, but it's taking longer than expected.<br/>
-                Would you like to escalate this issue to our support team?
+                Would you like to contact our support team for help?
               </p>
 
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -1514,20 +1583,18 @@ export default function Troubleshoot() {
                   Back to Dashboard
                 </button>
                 <button
-                  onClick={async () => {
-                    const status = await checkEscalationStatus();
-                    if (status?.hasRecentEscalation && !status.canEscalateAgain) {
-                      setEscalationTicketId(status.ticketId || '');
-                      setStep('escalation_pending');
-                    } else {
-                      createEscalation();
-                    }
+                  onClick={() => {
+                    setContactMethod(null);
+                    setContactPhone('');
+                    setPreferredCallTime('');
+                    setTicketNotes('');
+                    setTicketError('');
+                    setStep('support_contact_form');
                   }}
-                  disabled={isSubmitting}
-                  className="px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg disabled:opacity-50"
+                  className="px-6 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg"
                   style={{ backgroundColor: '#10a37f' }}
                 >
-                  {isSubmitting ? 'Submitting...' : 'Escalate Issue'}
+                  Contact Support
                 </button>
               </div>
             </motion.div>
@@ -1620,6 +1687,190 @@ export default function Troubleshoot() {
               >
                 Back to Dashboard
               </button>
+            </motion.div>
+          )}
+
+          {step === 'support_contact_form' && (
+            <motion.div
+              key="support_contact_form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="py-6 sm:py-8"
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#6366f120' }}>
+                  <svg className="w-8 h-8" style={{ color: '#6366f1' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <p className="text-lg font-medium" style={{ color: '#0f172a' }}>Contact Support</p>
+                <p className="text-gray-500 mt-2">Tell us how you'd like to be reached and describe your issue</p>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">How would you like to be contacted?</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setContactMethod('email')}
+                      className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all font-medium text-sm ${
+                        contactMethod === 'email'
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                      }`}
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Email
+                    </button>
+                    <button
+                      onClick={() => setContactMethod('phone')}
+                      className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all font-medium text-sm ${
+                        contactMethod === 'phone'
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                      }`}
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      Phone Call
+                    </button>
+                  </div>
+                </div>
+
+                {contactMethod === 'phone' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                        placeholder="(555) 123-4567"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Preferred Time to Call</label>
+                      <select
+                        value={preferredCallTime}
+                        onChange={(e) => setPreferredCallTime(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm bg-white"
+                      >
+                        <option value="">Select a time window...</option>
+                        <option value="Morning (8AM - 12PM CST)">Morning (8AM - 12PM CST)</option>
+                        <option value="Afternoon (12PM - 4PM CST)">Afternoon (12PM - 4PM CST)</option>
+                        <option value="Evening (4PM - 7PM CST)">Evening (4PM - 7PM CST)</option>
+                        <option value="Anytime during business hours">Anytime during business hours</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Describe Your Issue</label>
+                  <textarea
+                    value={ticketNotes}
+                    onChange={(e) => setTicketNotes(e.target.value)}
+                    placeholder="Please describe the issue you're experiencing in detail. Include any error messages, when the issue started, and what you've already tried..."
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">{ticketNotes.length < 10 ? `At least ${10 - ticketNotes.length} more characters needed` : 'Looks good!'}</p>
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-xs text-gray-500">
+                      A support ticket will be created and assigned to our Tier 1 Support team. We'll reach out to you using your preferred contact method within 24 hours.
+                    </p>
+                  </div>
+                </div>
+
+                {ticketError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <p className="text-sm text-red-700">{ticketError}</p>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => {
+                    const issueType = lineStatus && ['suspended', 'suspend'].some(s => (lineStatus || '').toLowerCase().includes(s))
+                      ? 'line_restoration'
+                      : 'slow_speed';
+                    submitTroubleshootingTicket(issueType);
+                  }}
+                  disabled={ticketSubmitting || !contactMethod || ticketNotes.trim().length < 10 || (contactMethod === 'phone' && !contactPhone)}
+                  className="w-full px-6 py-3 rounded-xl text-white font-medium transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: '#6366f1' }}
+                >
+                  {ticketSubmitting ? 'Submitting...' : 'Submit Support Ticket'}
+                </button>
+
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full px-4 py-3 rounded-xl font-medium transition-all border border-gray-300 hover:bg-gray-50 text-sm"
+                  style={{ color: '#0f172a' }}
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'support_ticket_submitted' && (
+            <motion.div
+              key="support_ticket_submitted"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-8"
+            >
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10a37f20' }}>
+                <svg className="w-8 h-8" style={{ color: '#10a37f' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-lg font-medium" style={{ color: '#0f172a' }}>Support Ticket Created</p>
+              <p className="text-gray-500 mt-2 mb-6">
+                Your support request has been submitted to our Tier 1 Support team.<br/>
+                We'll contact you via {contactMethod === 'phone' ? 'phone' : 'email'}{preferredCallTime ? ` during ${preferredCallTime}` : ''} within 24 hours.
+              </p>
+
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+                <p className="text-sm text-green-700">
+                  Ticket ID: <span className="font-medium font-mono">{supportTicketId}</span>
+                </p>
+                <p className="text-sm text-green-600 mt-1">
+                  Please save this ticket ID for your reference.
+                </p>
+              </div>
+
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="px-6 py-3 rounded-xl text-white font-medium transition-all hover:shadow-lg"
+                  style={{ backgroundColor: '#10a37f' }}
+                >
+                  Back to Dashboard
+                </button>
+                <a
+                  href="tel:+18447677770"
+                  className="px-6 py-3 rounded-xl font-medium transition-all border border-gray-300 hover:bg-gray-50 flex items-center gap-2"
+                  style={{ color: '#0f172a' }}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  Call Support
+                </a>
+              </div>
             </motion.div>
           )}
 
