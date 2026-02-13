@@ -30,8 +30,8 @@ The design adheres to Nomad Internet's official branding with a modern SaaS aest
 - **Sign-Up & Sign-In Flows**: Comprehensive flows including email and phone OTP verification, secure password handling, and passwordless options.
 - **Account Management**: Functionality for users to update personal information (name, password, phone number).
 - **Dashboard**: A centralized view with dedicated tabs for managing subscriptions, viewing orders, accessing invoices, and monitoring internet device status.
-- **Troubleshooting**: Automated line status checks, suspended line auto-restoration, escalation to support, and specific guidance for active lines, including detailed slow speed diagnostics.
-- **Admin Dashboard**: Secure admin login and dashboard for managing customer feedback, cancellation requests, viewing subscription pause logs, add-on operation logs, and external API request logs with filtering and CSV export.
+- **Troubleshooting**: Automated line status checks, suspended line auto-restoration, escalation to support with Zendesk ticket creation (collecting contact method, phone, preferred call time, and detailed notes), and specific guidance for active lines, including detailed slow speed diagnostics. The "Internet Not Working" step also offers a "Contact Support" button for direct ticket creation.
+- **Admin Dashboard**: Secure admin login and dashboard for managing customer feedback, cancellation requests, viewing subscription pause logs, add-on operation logs, and external API request logs with filtering and CSV export. Settings tab includes Zendesk Ticket Routing with live dropdowns for selecting Zendesk groups and agents for both troubleshooting and cancellation tickets.
 
 ## External Dependencies
 - **Chargebee**: Billing, subscriptions, invoices, transactions, customer management.

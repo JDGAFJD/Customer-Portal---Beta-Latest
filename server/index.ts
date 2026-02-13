@@ -1727,6 +1727,8 @@ app.post("/api/troubleshooting/submit-ticket", customerApiLimiter, async (req, r
 
     const groupIdSetting = await storage.getPortalSetting("zendesk_troubleshooting_group_id");
     const groupId = groupIdSetting?.value || "41909825396372";
+    const assigneeIdSetting = await storage.getPortalSetting("zendesk_troubleshooting_assignee_id");
+    const assigneeId = assigneeIdSetting?.value && assigneeIdSetting.value !== 'none' ? assigneeIdSetting.value : null;
 
     let zendeskTicketId: string | null = null;
 
@@ -1734,7 +1736,7 @@ app.post("/api/troubleshooting/submit-ticket", customerApiLimiter, async (req, r
       try {
         const issueLabel = issueType === 'slow_speed' ? 'Slow Speed' : issueType === 'line_restoration' ? 'Line Restoration' : (issueType || 'General').replace(/_/g, ' ');
 
-        const ticketBody = {
+        const ticketBody: any = {
           ticket: {
             subject: `Troubleshooting Support - ${issueLabel} - ${subscriptionId || 'N/A'}`,
             comment: {
@@ -1784,6 +1786,10 @@ ACTION REQUIRED: Tier 1 Support - Please follow up with customer within 24 hours
           }
         };
 
+        if (assigneeId) {
+          ticketBody.ticket.assignee_id = parseInt(assigneeId);
+        }
+
         const zendeskResponse = await fetch(
           `https://${zendeskSubdomain}.zendesk.com/api/v2/tickets.json`,
           {
@@ -1797,7 +1803,7 @@ ACTION REQUIRED: Tier 1 Support - Please follow up with customer within 24 hours
         );
 
         if (zendeskResponse.ok) {
-          const zendeskData = await zendeskResponse.json();
+          const zendeskData = await zendeskResponse.json() as any;
           zendeskTicketId = zendeskData.ticket?.id?.toString();
           console.log("Troubleshooting Zendesk ticket created:", zendeskTicketId);
         } else {
@@ -3190,9 +3196,11 @@ app.post("/api/cancellation/submit-contact", async (req, res) => {
 
     const groupIdSetting = await storage.getPortalSetting("zendesk_cancellation_group_id");
     const channelIdSetting = await storage.getPortalSetting("slack_channel_id");
+    const cancellationAssigneeSetting = await storage.getPortalSetting("zendesk_cancellation_assignee_id");
 
     const groupId = groupIdSetting?.value || "41909825396372";
     const channelId = channelIdSetting?.value || "D09CQ87C6UU";
+    const cancellationAssigneeId = cancellationAssigneeSetting?.value && cancellationAssigneeSetting.value !== 'none' ? cancellationAssigneeSetting.value : null;
 
     let zendeskTicketId = null;
     let slackMessageTs = null;
@@ -3207,7 +3215,7 @@ app.post("/api/cancellation/submit-contact", async (req, res) => {
               ? "⚠️ NOT ELIGIBLE - Customer received a discount within the last 2 months"
               : "N/A - No retention offer presented";
 
-        const ticketBody = {
+        const ticketBody: any = {
           ticket: {
             subject: `Cancellation Request - ${request.subscriptionId}`,
             comment: {
@@ -3258,6 +3266,10 @@ ACTION REQUIRED: Please follow up with customer within 24 hours to complete canc
             tags: ["cancellation", "retention", "portal"]
           }
         };
+
+        if (cancellationAssigneeId) {
+          ticketBody.ticket.assignee_id = parseInt(cancellationAssigneeId);
+        }
 
         const zendeskResponse = await fetch(
           `https://${zendeskSubdomain}.zendesk.com/api/v2/tickets.json`,
@@ -3569,6 +3581,102 @@ app.post("/api/admin/settings", async (req, res) => {
   } catch (error: any) {
     console.error("Update setting error:", error);
     res.status(500).json({ error: error.message || "Failed to update setting" });
+  }
+});
+
+// Zendesk Groups & Users (admin)
+app.get("/api/admin/zendesk/groups", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "No authorization token provided" });
+    }
+    const token = authHeader.split(" ")[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      if (!decoded.isAdmin) return res.status(403).json({ error: "Admin access required" });
+    } catch {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const zendeskSubdomain = process.env.ZENDESK_SUBDOMAIN;
+    const zendeskEmail = process.env.ZENDESK_EMAIL;
+    const zendeskToken = process.env.ZENDESK_API_TOKEN;
+    if (!zendeskSubdomain || !zendeskEmail || !zendeskToken) {
+      return res.status(500).json({ error: "Zendesk credentials not configured" });
+    }
+
+    const authString = Buffer.from(`${zendeskEmail}/token:${zendeskToken}`).toString('base64');
+    const response = await fetch(`https://${zendeskSubdomain}.zendesk.com/api/v2/groups.json`, {
+      headers: { 'Authorization': `Basic ${authString}`, 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      return res.status(502).json({ error: "Failed to fetch Zendesk groups" });
+    }
+
+    const data = await response.json() as any;
+    const groups = (data.groups || []).map((g: any) => ({
+      id: String(g.id),
+      name: g.name,
+      description: g.description || ''
+    }));
+
+    res.json({ groups });
+  } catch (error: any) {
+    console.error("Fetch Zendesk groups error:", error);
+    res.status(500).json({ error: error.message || "Failed to fetch Zendesk groups" });
+  }
+});
+
+app.get("/api/admin/zendesk/users", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "No authorization token provided" });
+    }
+    const token = authHeader.split(" ")[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      if (!decoded.isAdmin) return res.status(403).json({ error: "Admin access required" });
+    } catch {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const zendeskSubdomain = process.env.ZENDESK_SUBDOMAIN;
+    const zendeskEmail = process.env.ZENDESK_EMAIL;
+    const zendeskToken = process.env.ZENDESK_API_TOKEN;
+    if (!zendeskSubdomain || !zendeskEmail || !zendeskToken) {
+      return res.status(500).json({ error: "Zendesk credentials not configured" });
+    }
+
+    const groupId = req.query.group_id as string;
+    const authString = Buffer.from(`${zendeskEmail}/token:${zendeskToken}`).toString('base64');
+    
+    let url = `https://${zendeskSubdomain}.zendesk.com/api/v2/users.json?role=agent&per_page=100`;
+    if (groupId) {
+      url = `https://${zendeskSubdomain}.zendesk.com/api/v2/groups/${groupId}/users.json?per_page=100`;
+    }
+
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Basic ${authString}`, 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      return res.status(502).json({ error: "Failed to fetch Zendesk users" });
+    }
+
+    const data = await response.json() as any;
+    const users = (data.users || []).map((u: any) => ({
+      id: String(u.id),
+      name: u.name,
+      email: u.email
+    }));
+
+    res.json({ users });
+  } catch (error: any) {
+    console.error("Fetch Zendesk users error:", error);
+    res.status(500).json({ error: error.message || "Failed to fetch Zendesk users" });
   }
 });
 

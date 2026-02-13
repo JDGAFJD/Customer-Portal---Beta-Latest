@@ -125,6 +125,15 @@ export default function AdminDashboard() {
   const [apiLogsLoading, setApiLogsLoading] = useState(false)
   const [apiLogFilter, setApiLogFilter] = useState<'all' | 'chargebee' | 'shopify' | 'shipstation' | 'thingspace' | 'failed'>('all')
   const [exportingApiLogs, setExportingApiLogs] = useState(false)
+  const [zendeskGroups, setZendeskGroups] = useState<{id: string, name: string, description: string}[]>([])
+  const [zendeskUsers, setZendeskUsers] = useState<{id: string, name: string, email: string}[]>([])
+  const [zendeskGroupsLoading, setZendeskGroupsLoading] = useState(false)
+  const [zendeskUsersLoading, setZendeskUsersLoading] = useState(false)
+  const [troubleshootingGroupId, setTroubleshootingGroupId] = useState('')
+  const [troubleshootingAssigneeId, setTroubleshootingAssigneeId] = useState('')
+  const [cancellationGroupId, setCancellationGroupId] = useState('')
+  const [cancellationAssigneeId, setCancellationAssigneeId] = useState('')
+  const [savingZendesk, setSavingZendesk] = useState(false)
   const navigate = useNavigate()
 
   const adminUser = JSON.parse(localStorage.getItem('admin_user') || '{}')
@@ -141,6 +150,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'settings') {
       fetchSettings()
+      fetchZendeskGroups()
+      fetchZendeskUsers()
     } else if (activeTab === 'cancellations') {
       fetchCancellations()
     } else if (activeTab === 'pause_logs') {
@@ -224,14 +235,77 @@ export default function AdminDashboard() {
         const data = await response.json()
         setSettings(data.settings || [])
         const slackSetting = data.settings?.find((s: PortalSetting) => s.key === 'slack_channel_id')
-        if (slackSetting) {
-          setSlackChannelId(slackSetting.value)
-        }
+        if (slackSetting) setSlackChannelId(slackSetting.value)
+        const tsGroup = data.settings?.find((s: PortalSetting) => s.key === 'zendesk_troubleshooting_group_id')
+        if (tsGroup) setTroubleshootingGroupId(tsGroup.value)
+        const tsAssignee = data.settings?.find((s: PortalSetting) => s.key === 'zendesk_troubleshooting_assignee_id')
+        if (tsAssignee) setTroubleshootingAssigneeId(tsAssignee.value)
+        const cancelGroup = data.settings?.find((s: PortalSetting) => s.key === 'zendesk_cancellation_group_id')
+        if (cancelGroup) setCancellationGroupId(cancelGroup.value)
+        const cancelAssignee = data.settings?.find((s: PortalSetting) => s.key === 'zendesk_cancellation_assignee_id')
+        if (cancelAssignee) setCancellationAssigneeId(cancelAssignee.value)
       }
     } catch (err) {
       setError('Failed to load settings')
     } finally {
       setSettingsLoading(false)
+    }
+  }
+
+  const fetchZendeskGroups = async () => {
+    setZendeskGroupsLoading(true)
+    try {
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch('/api/admin/zendesk/groups', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setZendeskGroups(data.groups || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch Zendesk groups:', err)
+    } finally {
+      setZendeskGroupsLoading(false)
+    }
+  }
+
+  const fetchZendeskUsers = async (groupId?: string) => {
+    setZendeskUsersLoading(true)
+    try {
+      const token = localStorage.getItem('admin_token')
+      const url = groupId ? `/api/admin/zendesk/users?group_id=${groupId}` : '/api/admin/zendesk/users'
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setZendeskUsers(data.users || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch Zendesk users:', err)
+    } finally {
+      setZendeskUsersLoading(false)
+    }
+  }
+
+  const saveZendeskRouting = async (settingKey: string, value: string) => {
+    setSavingZendesk(true)
+    try {
+      const token = localStorage.getItem('admin_token')
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ key: settingKey, value })
+      })
+      if (response.ok) {
+        setSettingsSuccess('Zendesk routing updated successfully!')
+        await fetchSettings()
+      }
+    } catch (err) {
+      setError('Failed to save Zendesk routing')
+    } finally {
+      setSavingZendesk(false)
     }
   }
 
@@ -1480,6 +1554,119 @@ export default function AdminDashboard() {
                       {savingSettings ? 'Saving...' : 'Save Channel ID'}
                     </button>
                   </div>
+                </div>
+
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Zendesk Ticket Routing</h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Configure which Zendesk group and agent should receive tickets created from the portal.
+                  </p>
+
+                  {zendeskGroupsLoading ? (
+                    <div className="flex items-center gap-2 text-gray-500 text-sm py-4">
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2" style={{ borderColor: '#10a37f' }}></div>
+                      Loading Zendesk groups...
+                    </div>
+                  ) : zendeskGroups.length === 0 ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                      <p className="text-sm text-yellow-700">
+                        Could not load Zendesk groups. Please verify your Zendesk credentials are configured correctly.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-8">
+                      <div className="border border-gray-100 rounded-lg p-5 bg-gray-50/50">
+                        <h4 className="font-medium text-gray-800 mb-4 flex items-center gap-2">
+                          <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                          Troubleshooting Tickets
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Group</label>
+                            <select
+                              value={troubleshootingGroupId}
+                              onChange={async (e) => {
+                                setTroubleshootingGroupId(e.target.value)
+                                await saveZendeskRouting('zendesk_troubleshooting_group_id', e.target.value)
+                                fetchZendeskUsers(e.target.value)
+                              }}
+                              disabled={savingZendesk}
+                              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm bg-white"
+                            >
+                              <option value="">Select a group...</option>
+                              {zendeskGroups.map(g => (
+                                <option key={g.id} value={g.id}>{g.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Agent (Optional)</label>
+                            <select
+                              value={troubleshootingAssigneeId}
+                              onChange={async (e) => {
+                                setTroubleshootingAssigneeId(e.target.value)
+                                await saveZendeskRouting('zendesk_troubleshooting_assignee_id', e.target.value || 'none')
+                              }}
+                              disabled={savingZendesk || zendeskUsersLoading}
+                              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm bg-white"
+                            >
+                              <option value="">Unassigned (group default)</option>
+                              {zendeskUsers.map(u => (
+                                <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border border-gray-100 rounded-lg p-5 bg-gray-50/50">
+                        <h4 className="font-medium text-gray-800 mb-4 flex items-center gap-2">
+                          <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Cancellation Tickets
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Group</label>
+                            <select
+                              value={cancellationGroupId}
+                              onChange={async (e) => {
+                                setCancellationGroupId(e.target.value)
+                                await saveZendeskRouting('zendesk_cancellation_group_id', e.target.value)
+                              }}
+                              disabled={savingZendesk}
+                              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm bg-white"
+                            >
+                              <option value="">Select a group...</option>
+                              {zendeskGroups.map(g => (
+                                <option key={g.id} value={g.id}>{g.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Agent (Optional)</label>
+                            <select
+                              value={cancellationAssigneeId}
+                              onChange={async (e) => {
+                                setCancellationAssigneeId(e.target.value)
+                                await saveZendeskRouting('zendesk_cancellation_assignee_id', e.target.value || 'none')
+                              }}
+                              disabled={savingZendesk || zendeskUsersLoading}
+                              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm bg-white"
+                            >
+                              <option value="">Unassigned (group default)</option>
+                              {zendeskUsers.map(u => (
+                                <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-lg border border-gray-200 p-6">

@@ -829,10 +829,25 @@ export default function Troubleshoot() {
               
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
                 <p className="text-sm text-gray-600">
-                  <strong>Still not working?</strong> If rebooting didn't help, please contact our support team at <a href="tel:+1218001000" className="font-medium" style={{ color: '#10a37f' }}>+1218001000</a> or use the chat feature on your dashboard.
+                  <strong>Still not working?</strong> If rebooting didn't help, you can create a support ticket and our team will follow up with you.
                 </p>
               </div>
               
+              <button
+                onClick={() => {
+                  setContactMethod(null);
+                  setContactPhone('');
+                  setPreferredCallTime('');
+                  setTicketNotes('');
+                  setTicketError('');
+                  setStep('support_contact_form');
+                }}
+                className="w-full px-4 py-3 rounded-lg text-white font-medium transition-all hover:shadow-lg mb-3"
+                style={{ backgroundColor: '#6366f1' }}
+              >
+                Contact Support
+              </button>
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep('active')}
